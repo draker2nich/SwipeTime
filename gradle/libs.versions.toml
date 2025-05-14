@@ -11,6 +11,7 @@ recyclerview = "1.3.2"
 lifecycle = "2.7.0"
 fragment = "1.7.1"
 cardstackview = "2.3.4"
+room = "2.6.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -25,6 +26,8 @@ lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmode
 lifecycle-livedata = { group = "androidx.lifecycle", name = "lifecycle-livedata", version.ref = "lifecycle" }
 fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
 cardstackview = { group = "com.github.yuyakaido", name = "CardStackView", version.ref = "cardstackview" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

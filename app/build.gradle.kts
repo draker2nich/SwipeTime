@@ -41,6 +41,10 @@ dependencies {
     implementation(libs.lifecycle.livedata)
     implementation(libs.fragment)
     implementation(libs.cardstackview)
+    
+    // Room Database
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
