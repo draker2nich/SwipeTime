@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">SwipeTime</string>
+    
+    <!-- Нижняя навигация -->
+    <string name="categories">Категории</string>
+    <string name="liked">Избранное</string>
+    <string name="profile">Профиль</string>
+    
+    <!-- Экран категорий -->
+    <string name="categories_title">Категории</string>
+    <string name="categories_subtitle">Выберите категорию контента для свайпа</string>
+    <string name="category_icon_description">Иконка категории</string>
+    
+    <!-- Экран избранного -->
+    <string name="liked_title">Избранное</string>
+    <string name="liked_empty_message">У вас пока нет избранного контента.\nПроведите вправо по карточкам, чтобы добавить элементы в избранное</string>
+    
+    <!-- Экран профиля -->
+    <string name="profile_title">Ваш профиль</string>
+    <string name="profile_message">Здесь будет отображаться ваш профиль и достижения</string>
+    
+    <!-- Разрешения -->
+    <string name="internet_permission">Необходим доступ к интернету для загрузки контента</string>
+    
+    <!-- Карточки контента -->
+    <string name="content_cover">Обложка контента</string>
+    <string name="swipe_left_indicator">Свайп влево (не нравится)</string>
+    <string name="swipe_right_indicator">Свайп вправо (нравится)</string>
+    <string name="empty_cards">Карточки закончились</string>
+    <string name="empty_cards_message">Возможно, стоит попробовать другую категорию или изменить фильтры</string>
+    <string name="reload_cards">Обновить карточки</string>
 </resources>

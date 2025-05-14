@@ -2,4 +2,18 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Цвета основного приложения -->
+    <color name="primary">#FF6200EE</color>
+    <color name="primary_variant">#FF3700B3</color>
+    <color name="secondary">#FF03DAC5</color>
+    <color name="secondary_variant">#FF018786</color>
+    
+    <!-- Цвета категорий -->
+    <color name="category_movies">#FF5252</color>
+    <color name="category_tv_shows">#FF4081</color>
+    <color name="category_games">#7C4DFF</color>
+    <color name="category_books">#448AFF</color>
+    <color name="category_anime">#40C4FF</color>
+    <color name="category_music">#64FFDA</color>
 </resources>
