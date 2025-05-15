@@ -29,4 +29,20 @@
     <string name="empty_cards">Карточки закончились</string>
     <string name="empty_cards_message">Возможно, стоит попробовать другую категорию или изменить фильтры</string>
     <string name="reload_cards">Обновить карточки</string>
+    
+    <!-- Детали контента -->
+    <string name="content_detail">Детали контента</string>
+    <string name="watched_status">Просмотрено / Прочитано / Пройдено</string>
+    <string name="movie_watched_status">Просмотрено</string>
+    <string name="tvshow_watched_status">Просмотрено</string>
+    <string name="game_completed_status">Пройдено</string>
+    <string name="book_read_status">Прочитано</string>
+    <string name="anime_watched_status">Просмотрено</string>
+    <string name="music_listened_status">Прослушано</string>
+    <string name="rating_label">Ваша оценка</string>
+    <string name="review_label">Ваш отзыв</string>
+    <string name="review_hint">Напишите ваше мнение об этом контенте…</string>
+    <string name="save_review">Сохранить отзыв</string>
+    <string name="save_success">Отзыв сохранен</string>
+    <string name="save_error">Ошибка при сохранении отзыва</string>
 </resources>

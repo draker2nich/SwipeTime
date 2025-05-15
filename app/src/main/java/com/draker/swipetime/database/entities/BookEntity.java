@@ -27,6 +27,9 @@ public class BookEntity extends ContentEntity {
 
     @ColumnInfo(name = "isbn")
     private String isbn;
+    
+    @ColumnInfo(name = "is_read")
+    private boolean read;
 
     public BookEntity() {
         super();
@@ -44,6 +47,7 @@ public class BookEntity extends ContentEntity {
         this.pageCount = pageCount;
         this.genres = genres;
         this.isbn = isbn;
+        this.read = false;
     }
 
     public String getAuthor() {
@@ -97,6 +101,15 @@ public class BookEntity extends ContentEntity {
 
     public void setIsbn(String isbn) {
         this.isbn = isbn;
+        setUpdatedAt(System.currentTimeMillis());
+    }
+    
+    public boolean isRead() {
+        return read;
+    }
+    
+    public void setRead(boolean read) {
+        this.read = read;
         setUpdatedAt(System.currentTimeMillis());
     }
 }

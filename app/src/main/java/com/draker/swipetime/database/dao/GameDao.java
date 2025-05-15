@@ -19,7 +19,7 @@ import java.util.List;
 public interface GameDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    long insert(GameEntity game);
+    void insert(GameEntity game);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<GameEntity> games);
@@ -29,15 +29,9 @@ public interface GameDao {
 
     @Delete
     void delete(GameEntity game);
-
-    @Query("DELETE FROM games WHERE id = :id")
-    void deleteById(String id);
-
+    
     @Query("SELECT * FROM games WHERE id = :id")
     GameEntity getById(String id);
-
-    @Query("SELECT * FROM games WHERE id = :id")
-    LiveData<GameEntity> observeById(String id);
 
     @Query("SELECT * FROM games")
     List<GameEntity> getAll();
@@ -51,35 +45,20 @@ public interface GameDao {
     @Query("SELECT * FROM games WHERE liked = 1")
     LiveData<List<GameEntity>> observeLiked();
 
-    @Query("SELECT * FROM games WHERE genres LIKE '%' || :genre || '%'")
-    List<GameEntity> getByGenre(String genre);
+    @Query("SELECT * FROM games WHERE is_completed = 1")
+    List<GameEntity> getCompleted();
 
-    @Query("SELECT * FROM games WHERE genres LIKE '%' || :genre || '%'")
-    LiveData<List<GameEntity>> observeByGenre(String genre);
+    @Query("SELECT * FROM games WHERE is_completed = 1")
+    LiveData<List<GameEntity>> observeCompleted();
 
-    @Query("SELECT * FROM games WHERE developer LIKE '%' || :developer || '%'")
-    List<GameEntity> getByDeveloper(String developer);
+    @Query("UPDATE games SET liked = :liked WHERE id = :id")
+    void updateLikedStatus(String id, boolean liked);
 
-    @Query("SELECT * FROM games WHERE publisher LIKE '%' || :publisher || '%'")
-    List<GameEntity> getByPublisher(String publisher);
-
-    @Query("SELECT * FROM games WHERE release_year = :year")
-    List<GameEntity> getByReleaseYear(int year);
-
-    @Query("SELECT * FROM games WHERE platforms LIKE '%' || :platform || '%'")
-    List<GameEntity> getByPlatform(String platform);
-
-    @Query("SELECT * FROM games WHERE platforms LIKE '%' || :platform || '%'")
-    LiveData<List<GameEntity>> observeByPlatform(String platform);
-
-    @Query("SELECT * FROM games WHERE esrb_rating = :rating")
-    List<GameEntity> getByEsrbRating(String rating);
+    @Query("UPDATE games SET is_completed = :completed WHERE id = :id")
+    void updateCompletedStatus(String id, boolean completed);
 
     @Query("SELECT * FROM games WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%'")
     List<GameEntity> search(String query);
-
-    @Query("DELETE FROM games")
-    void deleteAll();
 
     @Query("SELECT COUNT(*) FROM games")
     int getCount();
@@ -87,6 +66,9 @@ public interface GameDao {
     @Query("SELECT COUNT(*) FROM games WHERE liked = 1")
     int getLikedCount();
 
-    @Query("SELECT COUNT(*) FROM games WHERE genres LIKE '%' || :genre || '%'")
-    int getCountByGenre(String genre);
+    @Query("SELECT COUNT(*) FROM games WHERE is_completed = 1")
+    int getCompletedCount();
+    
+    @Query("DELETE FROM games")
+    void deleteAll();
 }

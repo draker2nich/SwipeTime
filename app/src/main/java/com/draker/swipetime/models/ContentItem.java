@@ -1,15 +1,20 @@
 package com.draker.swipetime.models;
 
+import java.io.Serializable;
+
 /**
  * Модель данных для отображения элементов контента в карточках
  */
-public class ContentItem {
+public class ContentItem implements Serializable {
     private String id;
     private String title;
     private String description;
     private String imageUrl;
     private String category;
     private boolean liked;
+    private boolean watched;
+    private float rating;
+    private String review;
 
     public ContentItem() {
         // Пустой конструктор для Firebase
@@ -22,6 +27,9 @@ public class ContentItem {
         this.imageUrl = imageUrl;
         this.category = category;
         this.liked = false;
+        this.watched = false;
+        this.rating = 0;
+        this.review = "";
     }
 
     public String getId() {
@@ -70,5 +78,29 @@ public class ContentItem {
 
     public void setLiked(boolean liked) {
         this.liked = liked;
+    }
+    
+    public boolean isWatched() {
+        return watched;
+    }
+    
+    public void setWatched(boolean watched) {
+        this.watched = watched;
+    }
+    
+    public float getRating() {
+        return rating;
+    }
+    
+    public void setRating(float rating) {
+        this.rating = rating;
+    }
+    
+    public String getReview() {
+        return review;
+    }
+    
+    public void setReview(String review) {
+        this.review = review;
     }
 }

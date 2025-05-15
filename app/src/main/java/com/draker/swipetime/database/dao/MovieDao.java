@@ -19,7 +19,7 @@ import java.util.List;
 public interface MovieDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    long insert(MovieEntity movie);
+    void insert(MovieEntity movie);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<MovieEntity> movies);
@@ -30,14 +30,8 @@ public interface MovieDao {
     @Delete
     void delete(MovieEntity movie);
 
-    @Query("DELETE FROM movies WHERE id = :id")
-    void deleteById(String id);
-
     @Query("SELECT * FROM movies WHERE id = :id")
     MovieEntity getById(String id);
-
-    @Query("SELECT * FROM movies WHERE id = :id")
-    LiveData<MovieEntity> observeById(String id);
 
     @Query("SELECT * FROM movies")
     List<MovieEntity> getAll();
@@ -51,26 +45,20 @@ public interface MovieDao {
     @Query("SELECT * FROM movies WHERE liked = 1")
     LiveData<List<MovieEntity>> observeLiked();
 
-    @Query("SELECT * FROM movies WHERE genres LIKE '%' || :genre || '%'")
-    List<MovieEntity> getByGenre(String genre);
+    @Query("SELECT * FROM movies WHERE watched = 1")
+    List<MovieEntity> getWatched();
 
-    @Query("SELECT * FROM movies WHERE genres LIKE '%' || :genre || '%'")
-    LiveData<List<MovieEntity>> observeByGenre(String genre);
+    @Query("SELECT * FROM movies WHERE watched = 1")
+    LiveData<List<MovieEntity>> observeWatched();
 
-    @Query("SELECT * FROM movies WHERE director LIKE '%' || :director || '%'")
-    List<MovieEntity> getByDirector(String director);
+    @Query("UPDATE movies SET liked = :liked WHERE id = :id")
+    void updateLikedStatus(String id, boolean liked);
 
-    @Query("SELECT * FROM movies WHERE release_year = :year")
-    List<MovieEntity> getByReleaseYear(int year);
-
-    @Query("SELECT * FROM movies WHERE release_year BETWEEN :startYear AND :endYear")
-    List<MovieEntity> getByReleaseYearRange(int startYear, int endYear);
+    @Query("UPDATE movies SET watched = :watched WHERE id = :id")
+    void updateWatchedStatus(String id, boolean watched);
 
     @Query("SELECT * FROM movies WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%'")
     List<MovieEntity> search(String query);
-
-    @Query("DELETE FROM movies")
-    void deleteAll();
 
     @Query("SELECT COUNT(*) FROM movies")
     int getCount();
@@ -78,6 +66,9 @@ public interface MovieDao {
     @Query("SELECT COUNT(*) FROM movies WHERE liked = 1")
     int getLikedCount();
 
-    @Query("SELECT COUNT(*) FROM movies WHERE genres LIKE '%' || :genre || '%'")
-    int getCountByGenre(String genre);
+    @Query("SELECT COUNT(*) FROM movies WHERE watched = 1")
+    int getWatchedCount();
+    
+    @Query("DELETE FROM movies")
+    void deleteAll();
 }

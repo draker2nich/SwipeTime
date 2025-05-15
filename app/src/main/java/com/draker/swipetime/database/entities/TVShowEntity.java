@@ -30,6 +30,9 @@ public class TVShowEntity extends ContentEntity {
 
     @ColumnInfo(name = "status")
     private String status; // ongoing, finished, cancelled
+    
+    @ColumnInfo(name = "watched")
+    private boolean watched;
 
     public TVShowEntity() {
         super();
@@ -48,6 +51,7 @@ public class TVShowEntity extends ContentEntity {
         this.episodes = episodes;
         this.genres = genres;
         this.status = status;
+        this.watched = false;
     }
 
     public String getCreator() {
@@ -110,6 +114,15 @@ public class TVShowEntity extends ContentEntity {
 
     public void setStatus(String status) {
         this.status = status;
+        setUpdatedAt(System.currentTimeMillis());
+    }
+    
+    public boolean isWatched() {
+        return watched;
+    }
+    
+    public void setWatched(boolean watched) {
+        this.watched = watched;
         setUpdatedAt(System.currentTimeMillis());
     }
 }

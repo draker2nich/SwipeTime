@@ -26,10 +26,20 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
             android:text="Название контента"
             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/watched_icon"
             app:layout_constraintStart_toEndOf="@+id/cover_liked_item"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/watched_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_check"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
@@ -52,12 +62,26 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:ellipsize="end"
-            android:maxLines="3"
+            android:maxLines="2"
             android:text="Описание контента"
             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/cover_liked_item"
             app:layout_constraintTop_toBottomOf="@+id/category_liked_item" />
+
+        <RatingBar
+            android:id="@+id/rating_bar_item"
+            style="?android:attr/ratingBarStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:isIndicator="true"
+            android:numStars="5"
+            android:stepSize="0.5"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@+id/cover_liked_item"
+            app:layout_constraintTop_toBottomOf="@+id/description_liked_item" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

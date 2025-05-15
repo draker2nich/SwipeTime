@@ -35,8 +35,8 @@ public class ContentEntity {
     @ColumnInfo(name = "liked")
     private boolean liked;
 
-    @ColumnInfo(name = "viewed")
-    private boolean viewed;
+    @ColumnInfo(name = "watched")
+    private boolean watched;
 
     @ColumnInfo(name = "rating")
     private float rating;
@@ -62,7 +62,7 @@ public class ContentEntity {
         this.category = category;
         this.contentType = contentType;
         this.liked = false;
-        this.viewed = false;
+        this.watched = false;
         this.rating = 0;
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
@@ -131,12 +131,12 @@ public class ContentEntity {
         this.updatedAt = System.currentTimeMillis();
     }
 
-    public boolean isViewed() {
-        return viewed;
+    public boolean isWatched() {
+        return watched;
     }
 
-    public void setViewed(boolean viewed) {
-        this.viewed = viewed;
+    public void setWatched(boolean watched) {
+        this.watched = watched;
         this.updatedAt = System.currentTimeMillis();
     }
 

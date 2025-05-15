@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -59,6 +60,8 @@ public class LikedContentAdapter extends RecyclerView.Adapter<LikedContentAdapte
         private TextView descriptionTextView;
         private ImageView coverImageView;
         private TextView categoryTextView;
+        private ImageView watchedIconView;
+        private RatingBar ratingBar;
 
         public LikedViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -66,6 +69,8 @@ public class LikedContentAdapter extends RecyclerView.Adapter<LikedContentAdapte
             descriptionTextView = itemView.findViewById(R.id.description_liked_item);
             coverImageView = itemView.findViewById(R.id.cover_liked_item);
             categoryTextView = itemView.findViewById(R.id.category_liked_item);
+            watchedIconView = itemView.findViewById(R.id.watched_icon);
+            ratingBar = itemView.findViewById(R.id.rating_bar_item);
         }
 
         public void bind(ContentItem item, OnItemClickListener listener) {
@@ -77,6 +82,34 @@ public class LikedContentAdapter extends RecyclerView.Adapter<LikedContentAdapte
             
             categoryTextView.setText(item.getCategory());
             
+            // Устанавливаем видимость иконки "просмотрено/прочитано"
+            if (item.isWatched()) {
+                watchedIconView.setVisibility(View.VISIBLE);
+                
+                // Выбираем иконку в зависимости от категории
+                if (item.getCategory().equals("Фильмы") || item.getCategory().equals("Сериалы") || 
+                    item.getCategory().equals("Аниме")) {
+                    watchedIconView.setImageResource(R.drawable.ic_watched);
+                } else if (item.getCategory().equals("Книги")) {
+                    watchedIconView.setImageResource(R.drawable.ic_read);
+                } else if (item.getCategory().equals("Игры")) {
+                    watchedIconView.setImageResource(R.drawable.ic_completed);
+                } else {
+                    watchedIconView.setImageResource(R.drawable.ic_check);
+                }
+            } else {
+                watchedIconView.setVisibility(View.GONE);
+            }
+            
+            // Устанавливаем рейтинг, если он есть
+            if (item.getRating() > 0) {
+                ratingBar.setVisibility(View.VISIBLE);
+                ratingBar.setRating(item.getRating() / 2); // Преобразуем 10-балльную шкалу в 5-балльную для RatingBar
+            } else {
+                ratingBar.setVisibility(View.GONE);
+            }
+            
+            // Обработка нажатия
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onItemClick(item);

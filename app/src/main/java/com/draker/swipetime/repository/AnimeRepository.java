@@ -9,130 +9,156 @@ import com.draker.swipetime.database.dao.AnimeDao;
 import com.draker.swipetime.database.entities.AnimeEntity;
 
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * Репозиторий для работы с аниме
  */
 public class AnimeRepository {
 
-    private final AnimeDao animeDao;
-    private final Executor executor;
+    private AnimeDao animeDao;
 
     public AnimeRepository(Application application) {
         AppDatabase db = AppDatabase.getInstance(application);
         animeDao = db.animeDao();
-        executor = Executors.newSingleThreadExecutor();
     }
 
-    // Методы для работы с аниме в фоновом потоке
-
+    /**
+     * Добавить новое аниме
+     * @param anime аниме
+     */
     public void insert(AnimeEntity anime) {
-        executor.execute(() -> animeDao.insert(anime));
+        animeDao.insert(anime);
     }
 
+    /**
+     * Добавить несколько аниме
+     * @param animes список аниме
+     */
     public void insertAll(List<AnimeEntity> animes) {
-        executor.execute(() -> animeDao.insertAll(animes));
+        animeDao.insertAll(animes);
     }
 
+    /**
+     * Обновить аниме
+     * @param anime аниме
+     */
     public void update(AnimeEntity anime) {
-        executor.execute(() -> animeDao.update(anime));
+        animeDao.update(anime);
     }
 
+    /**
+     * Удалить аниме
+     * @param anime аниме
+     */
     public void delete(AnimeEntity anime) {
-        executor.execute(() -> animeDao.delete(anime));
+        animeDao.delete(anime);
     }
 
-    public void deleteById(String id) {
-        executor.execute(() -> animeDao.deleteById(id));
-    }
-
-    public void deleteAll() {
-        executor.execute(animeDao::deleteAll);
-    }
-
-    // Синхронные методы для получения данных
-
+    /**
+     * Получить аниме по ID
+     * @param id ID аниме
+     * @return аниме или null, если не найдено
+     */
     public AnimeEntity getById(String id) {
         return animeDao.getById(id);
     }
 
+    /**
+     * Получить все аниме
+     * @return список всех аниме
+     */
     public List<AnimeEntity> getAll() {
         return animeDao.getAll();
     }
 
+    /**
+     * Получить список понравившихся аниме
+     * @return список аниме с отметкой liked=true
+     */
     public List<AnimeEntity> getLiked() {
         return animeDao.getLiked();
     }
 
-    public List<AnimeEntity> getByGenre(String genre) {
-        return animeDao.getByGenre(genre);
+    /**
+     * Обновить статус "понравилось" для аниме
+     * @param id ID аниме
+     * @param liked новый статус
+     */
+    public void updateLikedStatus(String id, boolean liked) {
+        animeDao.updateLikedStatus(id, liked);
     }
 
-    public List<AnimeEntity> getByStudio(String studio) {
-        return animeDao.getByStudio(studio);
+    /**
+     * Обновить статус "просмотрено" для аниме
+     * @param id ID аниме
+     * @param watched новый статус
+     */
+    public void updateWatchedStatus(String id, boolean watched) {
+        animeDao.updateWatchedStatus(id, watched);
     }
 
-    public List<AnimeEntity> getByReleaseYear(int year) {
-        return animeDao.getByReleaseYear(year);
+    /**
+     * Получить список просмотренных аниме
+     * @return список аниме с отметкой watched=true
+     */
+    public List<AnimeEntity> getWatched() {
+        return animeDao.getWatched();
     }
 
-    public List<AnimeEntity> getByStatus(String status) {
-        return animeDao.getByStatus(status);
-    }
-
-    public List<AnimeEntity> getByType(String type) {
-        return animeDao.getByType(type);
-    }
-
-    public List<AnimeEntity> getByMaxEpisodes(int episodeCount) {
-        return animeDao.getByMaxEpisodes(episodeCount);
-    }
-
-    public List<AnimeEntity> search(String query) {
-        return animeDao.search(query);
-    }
-
-    public int getCount() {
-        return animeDao.getCount();
-    }
-
-    public int getLikedCount() {
-        return animeDao.getLikedCount();
-    }
-
-    public int getCountByGenre(String genre) {
-        return animeDao.getCountByGenre(genre);
-    }
-
-    // LiveData методы для наблюдения за данными
-
-    public LiveData<AnimeEntity> observeById(String id) {
-        return animeDao.observeById(id);
-    }
-
+    /**
+     * Наблюдать за всеми аниме (LiveData)
+     * @return LiveData со списком всех аниме
+     */
     public LiveData<List<AnimeEntity>> observeAll() {
         return animeDao.observeAll();
     }
-
+    
+    /**
+     * Наблюдать за понравившимися аниме (LiveData)
+     * @return LiveData со списком понравившихся аниме
+     */
     public LiveData<List<AnimeEntity>> observeLiked() {
         return animeDao.observeLiked();
     }
 
-    public LiveData<List<AnimeEntity>> observeByGenre(String genre) {
-        return animeDao.observeByGenre(genre);
+    /**
+     * Наблюдать за просмотренными аниме (LiveData)
+     * @return LiveData со списком просмотренных аниме
+     */
+    public LiveData<List<AnimeEntity>> observeWatched() {
+        return animeDao.observeWatched();
     }
-
-    public LiveData<List<AnimeEntity>> observeByStudio(String studio) {
-        return animeDao.observeByStudio(studio);
+    
+    /**
+     * Поиск аниме по запросу
+     * @param query поисковый запрос
+     * @return список аниме, соответствующих запросу
+     */
+    public List<AnimeEntity> search(String query) {
+        return animeDao.search(query);
     }
-
-    public LiveData<List<AnimeEntity>> observeByStatus(String status) {
-        return animeDao.observeByStatus(status);
+    
+    /**
+     * Получить количество всех аниме
+     * @return количество аниме
+     */
+    public int getCount() {
+        return animeDao.getCount();
     }
-
-    public LiveData<List<AnimeEntity>> observeByType(String type) {
-        return animeDao.observeByType(type);
+    
+    /**
+     * Получить количество понравившихся аниме
+     * @return количество понравившихся аниме
+     */
+    public int getLikedCount() {
+        return animeDao.getLikedCount();
+    }
+    
+    /**
+     * Получить количество просмотренных аниме
+     * @return количество просмотренных аниме
+     */
+    public int getWatchedCount() {
+        return animeDao.getWatchedCount();
     }
 }

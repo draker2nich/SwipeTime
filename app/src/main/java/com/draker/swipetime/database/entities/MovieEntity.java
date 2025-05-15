@@ -21,6 +21,9 @@ public class MovieEntity extends ContentEntity {
 
     @ColumnInfo(name = "genres")
     private String genres;
+    
+    @ColumnInfo(name = "watched")
+    private boolean watched;
 
     public MovieEntity() {
         super();
@@ -35,6 +38,7 @@ public class MovieEntity extends ContentEntity {
         this.releaseYear = releaseYear;
         this.duration = duration;
         this.genres = genres;
+        this.watched = false;
     }
 
     public String getDirector() {
@@ -70,6 +74,15 @@ public class MovieEntity extends ContentEntity {
 
     public void setGenres(String genres) {
         this.genres = genres;
+        setUpdatedAt(System.currentTimeMillis());
+    }
+    
+    public boolean isWatched() {
+        return watched;
+    }
+    
+    public void setWatched(boolean watched) {
+        this.watched = watched;
         setUpdatedAt(System.currentTimeMillis());
     }
 }

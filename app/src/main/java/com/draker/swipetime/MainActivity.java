@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.draker.swipetime.fragments.CategoriesFragment;
 import com.draker.swipetime.fragments.LikedContentFragment;
 import com.draker.swipetime.fragments.ProfileFragment;
+import com.draker.swipetime.database.DbCleanerUtil;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -17,6 +18,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Закомментировано для сохранения данных между запусками
+        // DbCleanerUtil.deleteDatabase(getApplicationContext());
 
         // Инициализация BottomNavigationView
         bottomNavigationView = findViewById(R.id.bottom_navigation);

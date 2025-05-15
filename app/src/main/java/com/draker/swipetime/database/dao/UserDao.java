@@ -21,6 +21,9 @@ public interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(UserEntity user);
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertAll(List<UserEntity> users);
+
     @Update
     void update(UserEntity user);
 
@@ -36,45 +39,42 @@ public interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id")
     LiveData<UserEntity> observeById(String id);
 
+    @Query("SELECT * FROM users WHERE email = :email")
+    UserEntity getByEmail(String email);
+
+    @Query("SELECT * FROM users WHERE username = :username")
+    UserEntity getByUsername(String username);
+
     @Query("SELECT * FROM users")
     List<UserEntity> getAll();
 
     @Query("SELECT * FROM users")
     LiveData<List<UserEntity>> observeAll();
 
-    @Query("SELECT * FROM users WHERE level >= :minLevel")
-    List<UserEntity> getByMinLevel(int minLevel);
+    @Query("SELECT * FROM users WHERE level >= :level")
+    List<UserEntity> getByMinLevel(int level);
 
-    @Query("SELECT * FROM users ORDER BY level DESC LIMIT :limit")
-    List<UserEntity> getTopUsersByLevel(int limit);
+    @Query("SELECT * FROM users WHERE experience >= :experience")
+    List<UserEntity> getByMinExperience(int experience);
 
-    @Query("SELECT * FROM users ORDER BY experience DESC LIMIT :limit")
-    List<UserEntity> getTopUsersByExperience(int limit);
+    @Query("SELECT * FROM users ORDER BY level DESC")
+    List<UserEntity> getAllOrderedByLevelDesc();
 
-    @Query("UPDATE users SET experience = :experience WHERE id = :id")
-    void updateExperience(String id, int experience);
-
-    @Query("UPDATE users SET level = :level WHERE id = :id")
-    void updateLevel(String id, int level);
-
-    @Query("UPDATE users SET experience = experience + :amount WHERE id = :id")
-    void addExperience(String id, int amount);
-
-    @Query("UPDATE users SET last_login = :timestamp WHERE id = :id")
-    void updateLastLogin(String id, long timestamp);
-
-    @Query("UPDATE users SET preferred_categories = :categories WHERE id = :id")
-    void updatePreferredCategories(String id, String categories);
-
-    @Query("SELECT * FROM users WHERE email = :email")
-    UserEntity getByEmail(String email);
-
-    @Query("SELECT * FROM users WHERE username LIKE '%' || :query || '%'")
-    List<UserEntity> searchByUsername(String query);
-
-    @Query("DELETE FROM users")
-    void deleteAll();
+    @Query("SELECT * FROM users ORDER BY experience DESC")
+    List<UserEntity> getAllOrderedByExperienceDesc();
 
     @Query("SELECT COUNT(*) FROM users")
     int getCount();
+
+    @Query("UPDATE users SET experience = :experience WHERE id = :userId")
+    void updateExperience(String userId, int experience);
+
+    @Query("UPDATE users SET level = :level WHERE id = :userId")
+    void updateLevel(String userId, int level);
+
+    @Query("UPDATE users SET preferred_categories = :categories WHERE id = :userId")
+    void updatePreferredCategories(String userId, String categories);
+    
+    @Query("DELETE FROM users")
+    void deleteAll();
 }

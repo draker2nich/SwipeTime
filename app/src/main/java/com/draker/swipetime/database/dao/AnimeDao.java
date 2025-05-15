@@ -19,7 +19,7 @@ import java.util.List;
 public interface AnimeDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    long insert(AnimeEntity anime);
+    void insert(AnimeEntity anime);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<AnimeEntity> animes);
@@ -30,14 +30,8 @@ public interface AnimeDao {
     @Delete
     void delete(AnimeEntity anime);
 
-    @Query("DELETE FROM anime WHERE id = :id")
-    void deleteById(String id);
-
     @Query("SELECT * FROM anime WHERE id = :id")
     AnimeEntity getById(String id);
-
-    @Query("SELECT * FROM anime WHERE id = :id")
-    LiveData<AnimeEntity> observeById(String id);
 
     @Query("SELECT * FROM anime")
     List<AnimeEntity> getAll();
@@ -51,41 +45,20 @@ public interface AnimeDao {
     @Query("SELECT * FROM anime WHERE liked = 1")
     LiveData<List<AnimeEntity>> observeLiked();
 
-    @Query("SELECT * FROM anime WHERE genres LIKE '%' || :genre || '%'")
-    List<AnimeEntity> getByGenre(String genre);
+    @Query("SELECT * FROM anime WHERE watched = 1")
+    List<AnimeEntity> getWatched();
 
-    @Query("SELECT * FROM anime WHERE genres LIKE '%' || :genre || '%'")
-    LiveData<List<AnimeEntity>> observeByGenre(String genre);
+    @Query("SELECT * FROM anime WHERE watched = 1")
+    LiveData<List<AnimeEntity>> observeWatched();
 
-    @Query("SELECT * FROM anime WHERE studio LIKE '%' || :studio || '%'")
-    List<AnimeEntity> getByStudio(String studio);
+    @Query("UPDATE anime SET liked = :liked WHERE id = :id")
+    void updateLikedStatus(String id, boolean liked);
 
-    @Query("SELECT * FROM anime WHERE studio LIKE '%' || :studio || '%'")
-    LiveData<List<AnimeEntity>> observeByStudio(String studio);
-
-    @Query("SELECT * FROM anime WHERE release_year = :year")
-    List<AnimeEntity> getByReleaseYear(int year);
-
-    @Query("SELECT * FROM anime WHERE status = :status")
-    List<AnimeEntity> getByStatus(String status);
-
-    @Query("SELECT * FROM anime WHERE status = :status")
-    LiveData<List<AnimeEntity>> observeByStatus(String status);
-
-    @Query("SELECT * FROM anime WHERE type = :type")
-    List<AnimeEntity> getByType(String type);
-
-    @Query("SELECT * FROM anime WHERE type = :type")
-    LiveData<List<AnimeEntity>> observeByType(String type);
-
-    @Query("SELECT * FROM anime WHERE episodes <= :episodeCount")
-    List<AnimeEntity> getByMaxEpisodes(int episodeCount);
+    @Query("UPDATE anime SET watched = :watched WHERE id = :id")
+    void updateWatchedStatus(String id, boolean watched);
 
     @Query("SELECT * FROM anime WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%'")
     List<AnimeEntity> search(String query);
-
-    @Query("DELETE FROM anime")
-    void deleteAll();
 
     @Query("SELECT COUNT(*) FROM anime")
     int getCount();
@@ -93,6 +66,9 @@ public interface AnimeDao {
     @Query("SELECT COUNT(*) FROM anime WHERE liked = 1")
     int getLikedCount();
 
-    @Query("SELECT COUNT(*) FROM anime WHERE genres LIKE '%' || :genre || '%'")
-    int getCountByGenre(String genre);
+    @Query("SELECT COUNT(*) FROM anime WHERE watched = 1")
+    int getWatchedCount();
+    
+    @Query("DELETE FROM anime")
+    void deleteAll();
 }

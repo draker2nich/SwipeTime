@@ -27,6 +27,9 @@ public class GameEntity extends ContentEntity {
 
     @ColumnInfo(name = "esrb_rating")
     private String esrbRating;
+    
+    @ColumnInfo(name = "is_completed")
+    private boolean completed;
 
     public GameEntity() {
         super();
@@ -44,6 +47,7 @@ public class GameEntity extends ContentEntity {
         this.platforms = platforms;
         this.genres = genres;
         this.esrbRating = esrbRating;
+        this.completed = false;
     }
 
     public String getDeveloper() {
@@ -97,6 +101,15 @@ public class GameEntity extends ContentEntity {
 
     public void setEsrbRating(String esrbRating) {
         this.esrbRating = esrbRating;
+        setUpdatedAt(System.currentTimeMillis());
+    }
+    
+    public boolean isCompleted() {
+        return completed;
+    }
+    
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
         setUpdatedAt(System.currentTimeMillis());
     }
 }

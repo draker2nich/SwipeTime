@@ -19,7 +19,7 @@ import java.util.List;
 public interface BookDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    long insert(BookEntity book);
+    void insert(BookEntity book);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<BookEntity> books);
@@ -30,14 +30,8 @@ public interface BookDao {
     @Delete
     void delete(BookEntity book);
 
-    @Query("DELETE FROM books WHERE id = :id")
-    void deleteById(String id);
-
     @Query("SELECT * FROM books WHERE id = :id")
     BookEntity getById(String id);
-
-    @Query("SELECT * FROM books WHERE id = :id")
-    LiveData<BookEntity> observeById(String id);
 
     @Query("SELECT * FROM books")
     List<BookEntity> getAll();
@@ -51,35 +45,20 @@ public interface BookDao {
     @Query("SELECT * FROM books WHERE liked = 1")
     LiveData<List<BookEntity>> observeLiked();
 
-    @Query("SELECT * FROM books WHERE genres LIKE '%' || :genre || '%'")
-    List<BookEntity> getByGenre(String genre);
+    @Query("SELECT * FROM books WHERE is_read = 1")
+    List<BookEntity> getRead();
 
-    @Query("SELECT * FROM books WHERE genres LIKE '%' || :genre || '%'")
-    LiveData<List<BookEntity>> observeByGenre(String genre);
+    @Query("SELECT * FROM books WHERE is_read = 1")
+    LiveData<List<BookEntity>> observeRead();
 
-    @Query("SELECT * FROM books WHERE author LIKE '%' || :author || '%'")
-    List<BookEntity> getByAuthor(String author);
+    @Query("UPDATE books SET liked = :liked WHERE id = :id")
+    void updateLikedStatus(String id, boolean liked);
 
-    @Query("SELECT * FROM books WHERE author LIKE '%' || :author || '%'")
-    LiveData<List<BookEntity>> observeByAuthor(String author);
-
-    @Query("SELECT * FROM books WHERE publisher LIKE '%' || :publisher || '%'")
-    List<BookEntity> getByPublisher(String publisher);
-
-    @Query("SELECT * FROM books WHERE publish_year = :year")
-    List<BookEntity> getByPublishYear(int year);
-
-    @Query("SELECT * FROM books WHERE isbn = :isbn")
-    BookEntity getByIsbn(String isbn);
-
-    @Query("SELECT * FROM books WHERE page_count <= :pageCount")
-    List<BookEntity> getByMaxPageCount(int pageCount);
+    @Query("UPDATE books SET is_read = :read WHERE id = :id")
+    void updateReadStatus(String id, boolean read);
 
     @Query("SELECT * FROM books WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%'")
     List<BookEntity> search(String query);
-
-    @Query("DELETE FROM books")
-    void deleteAll();
 
     @Query("SELECT COUNT(*) FROM books")
     int getCount();
@@ -87,6 +66,42 @@ public interface BookDao {
     @Query("SELECT COUNT(*) FROM books WHERE liked = 1")
     int getLikedCount();
 
+    @Query("SELECT COUNT(*) FROM books WHERE is_read = 1")
+    int getReadCount();
+    
+    @Query("DELETE FROM books")
+    void deleteAll();
+    
+    @Query("DELETE FROM books WHERE id = :id")
+    void deleteById(String id);
+    
+    @Query("SELECT * FROM books WHERE genres LIKE '%' || :genre || '%'")
+    List<BookEntity> getByGenre(String genre);
+    
+    @Query("SELECT * FROM books WHERE author LIKE '%' || :author || '%'")
+    List<BookEntity> getByAuthor(String author);
+    
+    @Query("SELECT * FROM books WHERE publisher LIKE '%' || :publisher || '%'")
+    List<BookEntity> getByPublisher(String publisher);
+    
+    @Query("SELECT * FROM books WHERE publish_year = :year")
+    List<BookEntity> getByPublishYear(int year);
+    
+    @Query("SELECT * FROM books WHERE isbn = :isbn")
+    BookEntity getByIsbn(String isbn);
+    
+    @Query("SELECT * FROM books WHERE page_count <= :pageCount")
+    List<BookEntity> getByMaxPageCount(int pageCount);
+    
     @Query("SELECT COUNT(*) FROM books WHERE genres LIKE '%' || :genre || '%'")
     int getCountByGenre(String genre);
+    
+    @Query("SELECT * FROM books WHERE id = :id")
+    LiveData<BookEntity> observeById(String id);
+    
+    @Query("SELECT * FROM books WHERE genres LIKE '%' || :genre || '%'")
+    LiveData<List<BookEntity>> observeByGenre(String genre);
+    
+    @Query("SELECT * FROM books WHERE author LIKE '%' || :author || '%'")
+    LiveData<List<BookEntity>> observeByAuthor(String author);
 }

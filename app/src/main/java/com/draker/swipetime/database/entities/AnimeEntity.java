@@ -27,6 +27,9 @@ public class AnimeEntity extends ContentEntity {
 
     @ColumnInfo(name = "type")
     private String type; // TV, Movie, OVA, etc.
+    
+    @ColumnInfo(name = "watched")
+    private boolean watched;
 
     public AnimeEntity() {
         super();
@@ -44,6 +47,7 @@ public class AnimeEntity extends ContentEntity {
         this.genres = genres;
         this.status = status;
         this.type = type;
+        this.watched = false;
     }
 
     public String getStudio() {
@@ -97,6 +101,15 @@ public class AnimeEntity extends ContentEntity {
 
     public void setType(String type) {
         this.type = type;
+        setUpdatedAt(System.currentTimeMillis());
+    }
+    
+    public boolean isWatched() {
+        return watched;
+    }
+    
+    public void setWatched(boolean watched) {
+        this.watched = watched;
         setUpdatedAt(System.currentTimeMillis());
     }
 }
