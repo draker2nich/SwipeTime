@@ -3,299 +3,326 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background_dark">
 
-    <TextView
-        android:id="@+id/title_profile"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:text="@string/profile_title"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
+    <!-- Верхняя секция с информацией о пользователе -->
     <androidx.cardview.widget.CardView
-        android:id="@+id/profile_card"
-        android:layout_width="0dp"
+        android:id="@+id/user_info_card"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/title_profile">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+            <!-- Аватар пользователя -->
             <ImageView
                 android:id="@+id/profile_avatar"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:contentDescription="@string/profile_avatar_description"
-                app:layout_constraintStart_toStartOf="parent"
+                android:src="@drawable/ic_user_avatar"
                 app:layout_constraintTop_toTopOf="parent"
-                android:src="@drawable/ic_launcher_foreground"
-                app:tint="@color/colorPrimary" />
+                app:layout_constraintStart_toStartOf="parent"
+                android:contentDescription="Аватар пользователя" />
 
+            <!-- Имя пользователя -->
             <TextView
                 android:id="@+id/username_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:text="Пользователь"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
                 android:layout_marginStart="16dp"
-                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/profile_avatar"
-                app:layout_constraintTop_toTopOf="@+id/profile_avatar"
-                tools:text="Пользователь" />
+                app:layout_constraintTop_toTopOf="@id/profile_avatar"
+                app:layout_constraintStart_toEndOf="@id/profile_avatar"
+                app:layout_constraintEnd_toEndOf="parent" />
 
+            <!-- Уровень пользователя и звание -->
             <TextView
                 android:id="@+id/level_rank_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:text="Уровень 7 • Энтузиаст"
+                android:textSize="16sp"
+                android:textColor="@color/colorPrimary"
+                android:layout_marginStart="16dp"
                 android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                android:textColor="@color/colorExperience"
-                app:layout_constraintEnd_toEndOf="@+id/username_text"
-                app:layout_constraintStart_toStartOf="@+id/username_text"
-                app:layout_constraintTop_toBottomOf="@+id/username_text"
-                tools:text="Уровень 5 • Энтузиаст" />
+                app:layout_constraintTop_toBottomOf="@id/username_text"
+                app:layout_constraintStart_toEndOf="@id/profile_avatar"
+                app:layout_constraintEnd_toEndOf="parent" />
 
+            <!-- Email пользователя -->
             <TextView
                 android:id="@+id/email_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:text="user@swipetime.com"
+                android:textSize="14sp"
+                android:textColor="@color/text_gray"
+                android:layout_marginStart="16dp"
                 android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                app:layout_constraintEnd_toEndOf="@+id/level_rank_text"
-                app:layout_constraintStart_toStartOf="@+id/level_rank_text"
-                app:layout_constraintTop_toBottomOf="@+id/level_rank_text"
-                tools:text="user@swipetime.com" />
+                app:layout_constraintTop_toBottomOf="@id/level_rank_text"
+                app:layout_constraintStart_toEndOf="@id/profile_avatar"
+                app:layout_constraintEnd_toEndOf="parent" />
 
+            <!-- Разделитель -->
+            <View
+                android:id="@+id/divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/profile_avatar" />
+
+            <!-- Прогресс до следующего уровня -->
+            <TextView
+                android:id="@+id/progress_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-30% до уровня 8"
+                android:textSize="14sp"
+                android:textColor="@color/text_gray"
+                android:gravity="end"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@id/divider" />
+
+            <!-- Прогресс-бар опыта -->
             <ProgressBar
                 android:id="@+id/level_progress_bar"
                 style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:progress="70"
                 android:progressTint="@color/colorExperience"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/profile_avatar" />
-
-            <TextView
-                android:id="@+id/progress_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                app:layout_constraintEnd_toEndOf="@+id/level_progress_bar"
-                app:layout_constraintTop_toBottomOf="@+id/level_progress_bar"
-                tools:text="75% до уровня 6" />
+                app:layout_constraintTop_toBottomOf="@id/progress_text" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.cardview.widget.CardView>
 
+    <!-- Секция статистики -->
     <androidx.cardview.widget.CardView
         android:id="@+id/stats_card"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/profile_card">
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:layout_constraintTop_toBottomOf="@id/user_info_card">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:padding="16dp">
 
             <TextView
-                android:id="@+id/stats_title"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Статистика"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/swipes_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Свайпы:"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/stats_title" />
-
-            <TextView
-                android:id="@+id/swipes_count"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textSize="18sp"
                 android:textStyle="bold"
-                app:layout_constraintStart_toEndOf="@+id/swipes_label"
-                app:layout_constraintTop_toTopOf="@+id/swipes_label"
-                tools:text="15" />
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="8dp" />
 
-            <TextView
-                android:id="@+id/ratings_label"
-                android:layout_width="wrap_content"
+            <!-- Статистика свайпов -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Оценки:"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/swipes_label" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/ratings_count"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Свайпы:"
+                    android:textColor="@color/text_gray" />
+
+                <TextView
+                    android:id="@+id/swipes_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="74"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
+
+            <!-- Статистика оценок -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                android:textStyle="bold"
-                app:layout_constraintStart_toEndOf="@+id/ratings_label"
-                app:layout_constraintTop_toTopOf="@+id/ratings_label"
-                tools:text="3" />
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
 
-            <TextView
-                android:id="@+id/reviews_label"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Оценки:"
+                    android:textColor="@color/text_gray" />
+
+                <TextView
+                    android:id="@+id/ratings_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="100"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
+
+            <!-- Статистика рецензий -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Рецензии:"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/ratings_label" />
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
 
-            <TextView
-                android:id="@+id/reviews_count"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Рецензии:"
+                    android:textColor="@color/text_gray" />
+
+                <TextView
+                    android:id="@+id/reviews_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="52"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
+
+            <!-- Статистика достижений -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                android:textStyle="bold"
-                app:layout_constraintStart_toEndOf="@+id/reviews_label"
-                app:layout_constraintTop_toTopOf="@+id/reviews_label"
-                tools:text="1" />
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
 
-            <TextView
-                android:id="@+id/achievements_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Достижения:"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/reviews_label" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Достижения:"
+                    android:textColor="@color/text_gray" />
 
-            <TextView
-                android:id="@+id/achievements_count"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                android:textStyle="bold"
-                app:layout_constraintStart_toEndOf="@+id/achievements_label"
-                app:layout_constraintTop_toTopOf="@+id/achievements_label"
-                tools:text="2 / 21" />
+                <TextView
+                    android:id="@+id/achievements_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3 / 5"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
 
     </androidx.cardview.widget.CardView>
 
+    <!-- Кнопка "Мои достижения" -->
     <Button
         android:id="@+id/view_achievements_button"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
         android:text="Мои достижения"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/stats_card" />
+        android:backgroundTint="@color/accent_purple"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toBottomOf="@id/stats_card" />
 
+    <!-- Секция тестирования геймификации (только для разработки) -->
     <androidx.cardview.widget.CardView
-        android:id="@+id/test_card"
-        android:layout_width="0dp"
+        android:id="@+id/testing_card"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/view_achievements_button">
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:layout_constraintTop_toBottomOf="@id/view_achievements_button">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:padding="16dp">
 
             <TextView
-                android:id="@+id/test_title"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Тестирование геймификации"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="8dp" />
 
-            <Button
-                android:id="@+id/test_swipe_button"
-                android:layout_width="wrap_content"
+            <!-- Кнопки тестирования -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Имитировать свайп"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/test_title" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/test_rating_button"
-                android:layout_width="wrap_content"
+                <Button
+                    android:id="@+id/test_swipe_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Имитировать свайп"
+                    android:layout_marginEnd="4dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/accent_purple_light" />
+
+                <Button
+                    android:id="@+id/test_complete_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Имитировать лайк"
+                    android:layout_marginStart="4dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/accent_purple_light" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Имитировать оценку"
-                app:layout_constraintStart_toEndOf="@+id/test_swipe_button"
-                app:layout_constraintTop_toTopOf="@+id/test_swipe_button" />
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
 
-            <Button
-                android:id="@+id/test_review_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Имитировать рецензию"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/test_swipe_button" />
+                <Button
+                    android:id="@+id/test_review_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Имитировать рецензию"
+                    android:layout_marginEnd="4dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/accent_purple_light" />
 
-            <Button
-                android:id="@+id/test_complete_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Имитировать просмотр"
-                app:layout_constraintStart_toEndOf="@+id/test_review_button"
-                app:layout_constraintTop_toTopOf="@+id/test_review_button" />
+                <Button
+                    android:id="@+id/test_rating_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Имитировать оценку"
+                    android:layout_marginStart="4dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/accent_purple_light" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            </LinearLayout>
+
+        </LinearLayout>
 
     </androidx.cardview.widget.CardView>
 

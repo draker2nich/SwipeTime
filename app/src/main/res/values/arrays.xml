@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="initial_duration_values">
+        <item>0</item>
+        <item>300</item>
+    </array>
+
+    <array name="initial_year_values">
+        <item>1900</item>
+        <item>2025</item>
+    </array>
+</resources>

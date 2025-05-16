@@ -6,15 +6,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.draker.swipetime.R;
 import com.draker.swipetime.adapters.CardStackAdapter;
@@ -24,6 +26,7 @@ import com.draker.swipetime.database.entities.ContentEntity;
 import com.draker.swipetime.database.entities.GameEntity;
 import com.draker.swipetime.database.entities.MovieEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
+import com.draker.swipetime.database.entities.UserPreferencesEntity;
 import com.draker.swipetime.models.ContentItem;
 import com.draker.swipetime.repository.AnimeRepository;
 import com.draker.swipetime.repository.BookRepository;
@@ -31,16 +34,20 @@ import com.draker.swipetime.repository.ContentRepository;
 import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
+import com.draker.swipetime.repository.UserPreferencesRepository;
 import com.draker.swipetime.utils.ActionLogger;
+import com.draker.swipetime.utils.CardFilterIntegrator;
+import com.draker.swipetime.utils.CardInfoHelper;
+import com.draker.swipetime.utils.ContentFilterHelper;
 import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.LikedItemsHelper;
+import com.draker.swipetime.viewmodels.FilterViewModel;
 import com.yuyakaido.android.cardstackview.CardStackLayoutManager;
 import com.yuyakaido.android.cardstackview.CardStackListener;
 import com.yuyakaido.android.cardstackview.CardStackView;
 import com.yuyakaido.android.cardstackview.Direction;
 import com.yuyakaido.android.cardstackview.Duration;
-import com.yuyakaido.android.cardstackview.RewindAnimationSetting;
 import com.yuyakaido.android.cardstackview.StackFrom;
 import com.yuyakaido.android.cardstackview.SwipeAnimationSetting;
 import com.yuyakaido.android.cardstackview.SwipeableMethod;
@@ -48,13 +55,18 @@ import com.yuyakaido.android.cardstackview.SwipeableMethod;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CardStackFragment extends Fragment implements CardStackListener {
+public class CardStackFragment extends Fragment implements CardStackListener, FilterSettingsFragment.OnFilterSettingsClosedListener {
+
+    private static final String TAG = "CardStackFragment";
 
     private CardStackView cardStackView;
     private CardStackLayoutManager manager;
     private CardStackAdapter adapter;
     private ConstraintLayout emptyCardsContainer;
     private Button reloadButton;
+    private ImageButton filterButton;
+    private TextView categoryTitleView;
+    private TextView filtersAppliedIndicator;
     private String categoryName;
 
     // Репозитории для работы с базой данных
@@ -64,12 +76,19 @@ public class CardStackFragment extends Fragment implements CardStackListener {
     private BookRepository bookRepository;
     private AnimeRepository animeRepository;
     private ContentRepository contentRepository;
+    private UserPreferencesRepository preferencesRepository;
     private GamificationManager gamificationManager;
+
+    // ViewModel для фильтров
+    private FilterViewModel filterViewModel;
 
     // Текущий ID пользователя (в реальном приложении должен быть получен из аутентификации)
     private static final String CURRENT_USER_ID = "user_1";
 
     private static final String ARG_CATEGORY = "category";
+
+    // Флаг для отслеживания применения фильтров
+    private boolean filtersApplied = false;
 
     public static CardStackFragment newInstance(String category) {
         CardStackFragment fragment = new CardStackFragment();
@@ -85,7 +104,7 @@ public class CardStackFragment extends Fragment implements CardStackListener {
         if (getArguments() != null) {
             categoryName = getArguments().getString(ARG_CATEGORY);
         }
-        
+
         // Инициализация репозиториев
         movieRepository = new MovieRepository(requireActivity().getApplication());
         tvShowRepository = new TVShowRepository(requireActivity().getApplication());
@@ -93,9 +112,13 @@ public class CardStackFragment extends Fragment implements CardStackListener {
         bookRepository = new BookRepository(requireActivity().getApplication());
         animeRepository = new AnimeRepository(requireActivity().getApplication());
         contentRepository = new ContentRepository(requireActivity().getApplication());
-        
+        preferencesRepository = new UserPreferencesRepository(requireActivity().getApplication());
+
         // Инициализация менеджера геймификации
         gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
+
+        // Инициализация ViewModel
+        filterViewModel = new ViewModelProvider(this).get(FilterViewModel.class);
     }
 
     @Nullable
@@ -112,33 +135,147 @@ public class CardStackFragment extends Fragment implements CardStackListener {
         cardStackView = view.findViewById(R.id.card_stack_view);
         emptyCardsContainer = view.findViewById(R.id.empty_cards_container);
         reloadButton = view.findViewById(R.id.reload_button);
+        filterButton = view.findViewById(R.id.btn_filter);
+        categoryTitleView = view.findViewById(R.id.category_title);
+        filtersAppliedIndicator = view.findViewById(R.id.filters_applied_indicator);
+
+        // Устанавливаем название категории
+        categoryTitleView.setText(categoryName);
+
+        // Установка слушателя для кнопки фильтров
+        filterButton.setOnClickListener(v -> openFilterSettings());
 
         // Выводим отладочную информацию о количестве элементов в базе данных
-        Log.d("CardStackFragment", "Категория: " + categoryName);
-        Log.d("CardStackFragment", "Количество фильмов в базе: " + movieRepository.getCount());
-        Log.d("CardStackFragment", "Количество сериалов в базе: " + tvShowRepository.getCount());
-        Log.d("CardStackFragment", "Количество игр в базе: " + gameRepository.getCount());
-        Log.d("CardStackFragment", "Количество книг в базе: " + bookRepository.getCount());
-        Log.d("CardStackFragment", "Количество аниме в базе: " + animeRepository.getCount());
-        Log.d("CardStackFragment", "Общее количество контента в базе: " + contentRepository.getCount());
-        
-        if (categoryName.equals("Музыка")) {
-            List<ContentEntity> musicContent = contentRepository.getByCategory("Музыка");
-            Log.d("CardStackFragment", "Найдено элементов музыки в базе: " + (musicContent != null ? musicContent.size() : 0));
-        }
+        Log.d(TAG, "Категория: " + categoryName);
+        Log.d(TAG, "Количество фильмов в базе: " + movieRepository.getCount());
+        Log.d(TAG, "Количество сериалов в базе: " + tvShowRepository.getCount());
+        Log.d(TAG, "Количество игр в базе: " + gameRepository.getCount());
+        Log.d(TAG, "Количество книг в базе: " + bookRepository.getCount());
+        Log.d(TAG, "Количество аниме в базе: " + animeRepository.getCount());
+        Log.d(TAG, "Общее количество контента в базе: " + contentRepository.getCount());
 
         // Настройка CardStackLayoutManager
         setupCardStackView();
 
-        // Инициализация адаптера с данными из базы данных
-        List<ContentItem> items = createTestItems();
-        Log.d("CardStackFragment", "Создано элементов для отображения: " + items.size());
+        // Инициализация адаптера с данными, используя CardFilterIntegrator
+        List<ContentItem> items = CardFilterIntegrator.getFilteredContentItems(
+                categoryName,
+                CURRENT_USER_ID,
+                movieRepository,
+                tvShowRepository,
+                gameRepository,
+                bookRepository,
+                animeRepository,
+                contentRepository,
+                preferencesRepository
+        );
         
+        Log.d(TAG, "Создано элементов для отображения: " + items.size());
+
         adapter = new CardStackAdapter(getContext(), items);
         cardStackView.setAdapter(adapter);
 
         // Настройка кнопки перезагрузки
         reloadButton.setOnClickListener(v -> reloadCards());
+
+        // Проверяем статус применения фильтров
+        checkFiltersStatus();
+    }
+
+    /**
+     * Проверяет, были ли применены какие-либо фильтры
+     */
+    private void checkFiltersStatus() {
+        UserPreferencesEntity preferences = preferencesRepository.getByUserId(CURRENT_USER_ID);
+
+        // Проверяем, есть ли какие-либо установленные фильтры
+        boolean hasActiveFilters = false;
+
+        if (preferences != null) {
+            hasActiveFilters = (preferences.getPreferredGenres() != null && !preferences.getPreferredGenres().isEmpty()) ||
+                    (preferences.getPreferredCountries() != null && !preferences.getPreferredCountries().isEmpty()) ||
+                    (preferences.getPreferredLanguages() != null && !preferences.getPreferredLanguages().isEmpty()) ||
+                    (preferences.getInterestsTags() != null && !preferences.getInterestsTags().isEmpty()) ||
+                    preferences.getMinDuration() > 0 ||
+                    preferences.getMaxDuration() < Integer.MAX_VALUE ||
+                    preferences.getMinYear() > 1900 ||
+                    preferences.getMaxYear() < 2025 ||
+                    preferences.isAdultContentEnabled();
+        }
+
+        // Обновляем UI в соответствии с статусом фильтров
+        filtersApplied = hasActiveFilters;
+        updateFiltersIndicator();
+    }
+
+    /**
+     * Обновляет индикатор применения фильтров
+     */
+    private void updateFiltersIndicator() {
+        if (filtersApplied) {
+            filtersAppliedIndicator.setVisibility(View.VISIBLE);
+        } else {
+            filtersAppliedIndicator.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Открывает экран настроек фильтров
+     */
+    private void openFilterSettings() {
+        FilterSettingsFragment filterFragment = FilterSettingsFragment.newInstance();
+        filterFragment.setOnFilterSettingsClosedListener(this);
+
+        // Заменяем текущий фрагмент на фрагмент настроек фильтров
+        getParentFragmentManager()
+                .beginTransaction()
+                .add(R.id.fragment_container, filterFragment)
+                .addToBackStack("filter_settings")
+                .commit();
+    }
+
+    @Override
+    public void onFilterSettingsClosed(boolean filtersApplied) {
+        this.filtersApplied = filtersApplied;
+        updateFiltersIndicator();
+
+        if (filtersApplied) {
+            // Перезагружаем карточки с учетом новых фильтров
+            reloadCardsWithFilters();
+        }
+    }
+
+    /**
+     * Перезагружает карточки с применением фильтров
+     */
+    private void reloadCardsWithFilters() {
+        // Используем новый CardFilterIntegrator для получения отфильтрованного списка
+        List<ContentItem> filteredItems = CardFilterIntegrator.getFilteredContentItems(
+                categoryName,
+                CURRENT_USER_ID,
+                movieRepository,
+                tvShowRepository,
+                gameRepository,
+                bookRepository,
+                animeRepository,
+                contentRepository,
+                preferencesRepository
+        );
+        
+        Log.d(TAG, "Отфильтрованных элементов: " + filteredItems.size());
+        
+        // Обновляем адаптер с отфильтрованным списком
+        adapter.setItems(filteredItems);
+        
+        // Показываем сообщение об отсутствии карточек, если после фильтрации ничего не осталось
+        if (filteredItems.isEmpty()) {
+            cardStackView.setVisibility(View.GONE);
+            emptyCardsContainer.setVisibility(View.VISIBLE);
+            Toast.makeText(getContext(), "По вашим фильтрам ничего не найдено", Toast.LENGTH_SHORT).show();
+        } else {
+            cardStackView.setVisibility(View.VISIBLE);
+            emptyCardsContainer.setVisibility(View.GONE);
+        }
     }
 
     private void setupCardStackView() {
@@ -157,370 +294,36 @@ public class CardStackFragment extends Fragment implements CardStackListener {
         cardStackView.setLayoutManager(manager);
     }
 
-    // Создание данных для CardStack из базы данных
-    private List<ContentItem> createTestItems() {
-        List<ContentItem> items = new ArrayList<>();
-        
-        Log.d("CardStackFragment", "Создание списка элементов для категории: " + categoryName);
-        
-        if (categoryName.equals("Фильмы")) {
-            // Использование репозитория вместо хардкода данных
-            List<MovieEntity> movies = movieRepository.getAll();
-            Log.d("CardStackFragment", "Получено фильмов из базы данных: " + movies.size());
-            
-            if (movies != null && !movies.isEmpty()) {
-                for (MovieEntity movie : movies) {
-                    items.add(new ContentItem(
-                        movie.getId(),
-                        movie.getTitle(),
-                        movie.getDescription(),
-                        movie.getImageUrl(),
-                        movie.getCategory()
-                    ));
-                }
-            } else {
-                // Если в базе нет фильмов, создаем тестовые данные
-                Log.d("CardStackFragment", "В базе нет фильмов, создаем тестовые");
-                createTestMovies();
-                
-                // Получаем созданные фильмы
-                movies = movieRepository.getAll();
-                for (MovieEntity movie : movies) {
-                    items.add(new ContentItem(
-                        movie.getId(),
-                        movie.getTitle(),
-                        movie.getDescription(),
-                        movie.getImageUrl(),
-                        movie.getCategory()
-                    ));
-                }
-            }
-        } else if (categoryName.equals("Сериалы")) {
-            // Использование репозитория вместо хардкода данных
-            List<TVShowEntity> tvShows = tvShowRepository.getAll();
-            Log.d("CardStackFragment", "Получено сериалов из базы данных: " + tvShows.size());
-            
-            if (tvShows != null && !tvShows.isEmpty()) {
-                for (TVShowEntity tvShow : tvShows) {
-                    items.add(new ContentItem(
-                        tvShow.getId(),
-                        tvShow.getTitle(),
-                        tvShow.getDescription(),
-                        tvShow.getImageUrl(),
-                        tvShow.getCategory()
-                    ));
-                }
-            } else {
-                // Если в базе нет сериалов, создаем тестовые данные
-                Log.d("CardStackFragment", "В базе нет сериалов, создаем тестовые");
-                createTestTVShows();
-                
-                // Получаем созданные сериалы
-                tvShows = tvShowRepository.getAll();
-                for (TVShowEntity tvShow : tvShows) {
-                    items.add(new ContentItem(
-                        tvShow.getId(),
-                        tvShow.getTitle(),
-                        tvShow.getDescription(),
-                        tvShow.getImageUrl(),
-                        tvShow.getCategory()
-                    ));
-                }
-            }
-        } else if (categoryName.equals("Игры")) {
-            // Использование репозитория вместо хардкода данных
-            List<GameEntity> games = gameRepository.getAll();
-            Log.d("CardStackFragment", "Получено игр из базы данных: " + games.size());
-            
-            if (games != null && !games.isEmpty()) {
-                for (GameEntity game : games) {
-                    items.add(new ContentItem(
-                        game.getId(),
-                        game.getTitle(),
-                        game.getDescription(),
-                        game.getImageUrl(),
-                        game.getCategory()
-                    ));
-                }
-            } else {
-                // Если в базе нет игр, создаем тестовые данные
-                Log.d("CardStackFragment", "В базе нет игр, создаем тестовые");
-                createTestGames();
-                
-                // Получаем созданные игры
-                games = gameRepository.getAll();
-                for (GameEntity game : games) {
-                    items.add(new ContentItem(
-                        game.getId(),
-                        game.getTitle(),
-                        game.getDescription(),
-                        game.getImageUrl(),
-                        game.getCategory()
-                    ));
-                }
-            }
-        } else if (categoryName.equals("Книги")) {
-            // Использование репозитория вместо хардкода данных
-            List<BookEntity> books = bookRepository.getAll();
-            Log.d("CardStackFragment", "Получено книг из базы данных: " + books.size());
-            
-            if (books != null && !books.isEmpty()) {
-                for (BookEntity book : books) {
-                    items.add(new ContentItem(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getDescription(),
-                        book.getImageUrl(),
-                        book.getCategory()
-                    ));
-                }
-            } else {
-                // Если в базе нет книг, создаем тестовые данные
-                Log.d("CardStackFragment", "В базе нет книг, создаем тестовые");
-                createTestBooks();
-                
-                // Получаем созданные книги
-                books = bookRepository.getAll();
-                for (BookEntity book : books) {
-                    items.add(new ContentItem(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getDescription(),
-                        book.getImageUrl(),
-                        book.getCategory()
-                    ));
-                }
-            }
-        } else if (categoryName.equals("Аниме")) {
-            // Использование репозитория вместо хардкода данных
-            List<AnimeEntity> animes = animeRepository.getAll();
-            Log.d("CardStackFragment", "Получено аниме из базы данных: " + animes.size());
-            
-            if (animes != null && !animes.isEmpty()) {
-                for (AnimeEntity anime : animes) {
-                    items.add(new ContentItem(
-                        anime.getId(),
-                        anime.getTitle(),
-                        anime.getDescription(),
-                        anime.getImageUrl(),
-                        anime.getCategory()
-                    ));
-                }
-            } else {
-                // Если в базе нет аниме, создаем тестовые данные
-                Log.d("CardStackFragment", "В базе нет аниме, создаем тестовые");
-                createTestAnimes();
-                
-                // Получаем созданные аниме
-                animes = animeRepository.getAll();
-                for (AnimeEntity anime : animes) {
-                    items.add(new ContentItem(
-                        anime.getId(),
-                        anime.getTitle(),
-                        anime.getDescription(),
-                        anime.getImageUrl(),
-                        anime.getCategory()
-                    ));
-                }
-            }
-        } else {
-            // Для всех остальных категорий (включая Музыку) добавляем элементы из ContentEntity
-            List<ContentEntity> baseEntities = contentRepository.getByCategory(categoryName);
-            Log.d("CardStackFragment", "Получено элементов контента для категории " + categoryName + ": " + (baseEntities != null ? baseEntities.size() : 0));
-            if (baseEntities != null && !baseEntities.isEmpty()) {
-                for (ContentEntity entity : baseEntities) {
-                    items.add(new ContentItem(
-                        entity.getId(),
-                        entity.getTitle(),
-                        entity.getDescription(),
-                        entity.getImageUrl(),
-                        entity.getCategory()
-                    ));
-                }
-            } else {
-                // Если в базе данных нет элементов для этой категории, добавляем тестовые
-                Log.d("CardStackFragment", "Для категории " + categoryName + " в базе нет данных, создаем тестовые");
-                for (int i = 1; i <= 5; i++) {
-                    String itemId = categoryName.toLowerCase() + "_" + i;
-                    items.add(new ContentItem(
-                            itemId,
-                            categoryName + " - Элемент " + i,
-                            "Описание элемента " + i + " из категории " + categoryName + ". Это тестовое описание для демонстрации функционала свайпа карточек.",
-                            "url_to_image",
-                            categoryName
-                    ));
-                    
-                    // Добавляем тестовые данные в базу
-                    ContentEntity newEntity = new ContentEntity();
-                    newEntity.setId(itemId);
-                    newEntity.setTitle(categoryName + " - Элемент " + i);
-                    newEntity.setDescription("Описание элемента " + i + " из категории " + categoryName + ". Это тестовое описание для демонстрации функционала свайпа карточек.");
-                    newEntity.setImageUrl("url_to_image");
-                    newEntity.setCategory(categoryName);
-                    newEntity.setContentType(categoryName.toLowerCase());
-                    contentRepository.insert(newEntity);
-                    Log.d("CardStackFragment", "Создан тестовый элемент для " + categoryName + ": " + newEntity.getTitle());
-                }
-            }
-        }
-        
-        Log.d("CardStackFragment", "Всего создано элементов для категории " + categoryName + ": " + items.size());
-        return items;
-    }
-    
-    // Методы для создания тестовых данных
-    private void createTestMovies() {
-        try {
-            for (int i = 1; i <= 5; i++) {
-                MovieEntity movie = new MovieEntity();
-                movie.setId("movie_" + i);
-                movie.setTitle("Фильм " + i);
-                movie.setDescription("Описание фильма " + i + ". Увлекательный фильм для всей семьи.");
-                movie.setImageUrl("url_to_image");
-                movie.setCategory("Фильмы");
-                movie.setContentType("movie");
-                movieRepository.insert(movie);
-                
-                // Добавляем в общую таблицу контента
-                ContentEntity contentMovie = new ContentEntity();
-                contentMovie.setId(movie.getId());
-                contentMovie.setTitle(movie.getTitle());
-                contentMovie.setDescription(movie.getDescription());
-                contentMovie.setImageUrl(movie.getImageUrl());
-                contentMovie.setCategory(movie.getCategory());
-                contentMovie.setContentType(movie.getContentType());
-                contentRepository.insert(contentMovie);
-                
-                Log.d("CardStackFragment", "Создан тестовый фильм: " + movie.getTitle());
-            }
-        } catch (Exception e) {
-            Log.e("CardStackFragment", "Ошибка при создании тестовых фильмов: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    private void createTestTVShows() {
-        try {
-            for (int i = 1; i <= 5; i++) {
-                TVShowEntity tvShow = new TVShowEntity();
-                tvShow.setId("tvshow_" + i);
-                tvShow.setTitle("Сериал " + i);
-                tvShow.setDescription("Описание сериала " + i + ". Захватывающий сериал с множеством сезонов.");
-                tvShow.setImageUrl("url_to_image");
-                tvShow.setCategory("Сериалы");
-                tvShow.setContentType("tvshow");
-                tvShowRepository.insert(tvShow);
-                
-                // Добавляем в общую таблицу контента
-                ContentEntity contentTVShow = new ContentEntity();
-                contentTVShow.setId(tvShow.getId());
-                contentTVShow.setTitle(tvShow.getTitle());
-                contentTVShow.setDescription(tvShow.getDescription());
-                contentTVShow.setImageUrl(tvShow.getImageUrl());
-                contentTVShow.setCategory(tvShow.getCategory());
-                contentTVShow.setContentType(tvShow.getContentType());
-                contentRepository.insert(contentTVShow);
-                
-                Log.d("CardStackFragment", "Создан тестовый сериал: " + tvShow.getTitle());
-            }
-        } catch (Exception e) {
-            Log.e("CardStackFragment", "Ошибка при создании тестовых сериалов: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    private void createTestGames() {
-        try {
-            for (int i = 1; i <= 5; i++) {
-                GameEntity game = new GameEntity();
-                game.setId("game_" + i);
-                game.setTitle("Игра " + i);
-                game.setDescription("Описание игры " + i + ". Увлекательная игра с открытым миром.");
-                game.setImageUrl("url_to_image");
-                game.setCategory("Игры");
-                game.setContentType("game");
-                gameRepository.insert(game);
-                
-                // Добавляем в общую таблицу контента
-                ContentEntity contentGame = new ContentEntity();
-                contentGame.setId(game.getId());
-                contentGame.setTitle(game.getTitle());
-                contentGame.setDescription(game.getDescription());
-                contentGame.setImageUrl(game.getImageUrl());
-                contentGame.setCategory(game.getCategory());
-                contentGame.setContentType(game.getContentType());
-                contentRepository.insert(contentGame);
-                
-                Log.d("CardStackFragment", "Создана тестовая игра: " + game.getTitle());
-            }
-        } catch (Exception e) {
-            Log.e("CardStackFragment", "Ошибка при создании тестовых игр: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    private void createTestBooks() {
-        try {
-            for (int i = 1; i <= 5; i++) {
-                BookEntity book = new BookEntity();
-                book.setId("book_" + i);
-                book.setTitle("Книга " + i);
-                book.setDescription("Описание книги " + i + ". Интересное произведение с глубоким смыслом.");
-                book.setImageUrl("url_to_image");
-                book.setCategory("Книги");
-                book.setContentType("book");
-                bookRepository.insert(book);
-                
-                // Добавляем в общую таблицу контента
-                ContentEntity contentBook = new ContentEntity();
-                contentBook.setId(book.getId());
-                contentBook.setTitle(book.getTitle());
-                contentBook.setDescription(book.getDescription());
-                contentBook.setImageUrl(book.getImageUrl());
-                contentBook.setCategory(book.getCategory());
-                contentBook.setContentType(book.getContentType());
-                contentRepository.insert(contentBook);
-                
-                Log.d("CardStackFragment", "Создана тестовая книга: " + book.getTitle());
-            }
-        } catch (Exception e) {
-            Log.e("CardStackFragment", "Ошибка при создании тестовых книг: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    private void createTestAnimes() {
-        try {
-            for (int i = 1; i <= 5; i++) {
-                AnimeEntity anime = new AnimeEntity();
-                anime.setId("anime_" + i);
-                anime.setTitle("Аниме " + i);
-                anime.setDescription("Описание аниме " + i + ". Красочное аниме с интересным сюжетом.");
-                anime.setImageUrl("url_to_image");
-                anime.setCategory("Аниме");
-                anime.setContentType("anime");
-                animeRepository.insert(anime);
-                
-                // Добавляем в общую таблицу контента
-                ContentEntity contentAnime = new ContentEntity();
-                contentAnime.setId(anime.getId());
-                contentAnime.setTitle(anime.getTitle());
-                contentAnime.setDescription(anime.getDescription());
-                contentAnime.setImageUrl(anime.getImageUrl());
-                contentAnime.setCategory(anime.getCategory());
-                contentAnime.setContentType(anime.getContentType());
-                contentRepository.insert(contentAnime);
-                
-                Log.d("CardStackFragment", "Создано тестовое аниме: " + anime.getTitle());
-            }
-        } catch (Exception e) {
-            Log.e("CardStackFragment", "Ошибка при создании тестовых аниме: " + e.getMessage());
-            e.printStackTrace();
-        }
+    /**
+     * Обновляет информацию о текущей карточке на экране
+     * @param item текущий элемент
+     */
+    private void updateCurrentCardInfo(ContentItem item) {
+        // Используем CardInfoHelper для получения и отображения информации о карточке
+        CardInfoHelper.logDetailedInfo(item, contentRepository);
     }
 
     private void reloadCards() {
-        adapter.setItems(createTestItems());
+        // Если установлены фильтры, перезагружаем с их применением
+        if (filtersApplied) {
+            reloadCardsWithFilters();
+        } else {
+            // Иначе загружаем все элементы
+            List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
+                    categoryName,
+                    CURRENT_USER_ID,
+                    movieRepository,
+                    tvShowRepository,
+                    gameRepository,
+                    bookRepository,
+                    animeRepository,
+                    contentRepository,
+                    preferencesRepository
+            );
+            
+            adapter.setItems(allItems);
+        }
+
         cardStackView.setVisibility(View.VISIBLE);
         emptyCardsContainer.setVisibility(View.GONE);
     }
@@ -549,7 +352,7 @@ public class CardStackFragment extends Fragment implements CardStackListener {
 
     // Текущее видимое представление карточки
     private View topView = null;
-    
+
     // Реализация методов CardStackListener
     @Override
     public void onCardDragging(Direction direction, float ratio) {
@@ -564,81 +367,41 @@ public class CardStackFragment extends Fragment implements CardStackListener {
             }
         }
     }
-    
+
     @Override
     public void onCardSwiped(Direction direction) {
         // Обработка свайпа карточки
         int position = manager.getTopPosition() - 1;
         if (position >= 0 && position < adapter.getItems().size()) {
             ContentItem item = adapter.getItems().get(position);
-            Log.d("CardStackFragment", "Выполнен свайп карточки: " + item.getTitle() + " (ID: " + item.getId() + ", категория: " + categoryName + ")");
-            
+            Log.d(TAG, "Выполнен свайп карточки: " + item.getTitle() + " (ID: " + item.getId() + ", категория: " + categoryName + ")");
+
             if (direction == Direction.Right) {
                 // Пользователю понравился элемент
                 item.setLiked(true);
                 Toast.makeText(getContext(), "Добавлено в избранное: " + item.getTitle(), Toast.LENGTH_SHORT).show();
-                
+
                 // Логируем действие
                 ActionLogger.logSwipe(true, item.getId(), item.getTitle());
-                
+
                 // Используем вспомогательный класс для добавления элемента в избранное
-                LikedItemsHelper.addToLiked(item, categoryName, 
-                                          movieRepository, tvShowRepository, 
-                                          gameRepository, bookRepository, 
-                                          animeRepository, contentRepository);
-                
+                LikedItemsHelper.addToLiked(item, categoryName,
+                        movieRepository, tvShowRepository,
+                        gameRepository, bookRepository,
+                        animeRepository, contentRepository);
+
                 // Начисляем опыт за свайп вправо
                 boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
                 if (levelUp) {
                     Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
                 }
-                
-                // Проверяем наличие элемента в базе после добавления
-                boolean isFound = false;
-                
-                if (categoryName.equals("Музыка") || categoryName.equals("Фильмы") || 
-                    categoryName.equals("Сериалы") || categoryName.equals("Игры") || 
-                    categoryName.equals("Книги") || categoryName.equals("Аниме")) {
-                    // Проверка для всех категорий
-                    List<ContentEntity> categoryContent = contentRepository.getByCategory(categoryName);
-                    Log.d("CardStackFragment", "После свайпа: найдено элементов " + categoryName + ": " + 
-                         (categoryContent != null ? categoryContent.size() : 0));
-                    boolean foundInCategory = false;
-                    if (categoryContent != null) {
-                        for (ContentEntity content : categoryContent) {
-                            if (content.getId().equals(item.getId())) {
-                                foundInCategory = true;
-                                Log.d("CardStackFragment", categoryName + " найден(о) по ID: " + content.getTitle() + 
-                                     ", liked=" + content.isLiked());
-                                break;
-                            }
-                        }
-                    }
-                    if (!foundInCategory) {
-                        Log.d("CardStackFragment", categoryName + " с ID=" + item.getId() + 
-                             " не найден(о) в списке категории");
-                    } else {
-                        isFound = true;
-                    }
-                }
-                
-                // Проверка в общем хранилище контента
-                ContentEntity contentCheck = contentRepository.getById(item.getId());
-                if (contentCheck != null) {
-                    Log.d("CardStackFragment", "Контент найден в общем хранилище: " + contentCheck.getTitle() + ", liked=" + contentCheck.isLiked());
-                    isFound = true;
-                }
-                
-                if (!isFound) {
-                    Log.d("CardStackFragment", "ВНИМАНИЕ: После добавления в избранное, элемент НЕ найден в базе данных!");
-                }
             } else if (direction == Direction.Left) {
                 // Пользователю не понравился элемент
                 Toast.makeText(getContext(), "Пропущено: " + item.getTitle(), Toast.LENGTH_SHORT).show();
-                
+
                 // Логируем действие
                 ActionLogger.logSwipe(false, item.getId(), item.getTitle());
-                
+
                 // Начисляем опыт за свайп влево
                 boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), false);
                 if (levelUp) {
@@ -646,7 +409,7 @@ public class CardStackFragment extends Fragment implements CardStackListener {
                 }
             }
         } else {
-            Log.e("CardStackFragment", "Ошибка позиции при свайпе: position=" + position + ", размер адаптера=" + adapter.getItemCount());
+            Log.e(TAG, "Ошибка позиции при свайпе: position=" + position + ", размер адаптера=" + adapter.getItemCount());
         }
 
         // Если карточки закончились, показываем сообщение
@@ -674,6 +437,15 @@ public class CardStackFragment extends Fragment implements CardStackListener {
     public void onCardAppeared(View view, int position) {
         // Сохраняем ссылку на текущую верхнюю карточку
         topView = view;
+        
+        // Если позиция в пределах списка, отображаем информацию о карточке
+        if (position >= 0 && position < adapter.getItemCount()) {
+            ContentItem currentItem = adapter.getItems().get(position);
+            Log.d(TAG, "Отображается карточка: " + currentItem.getTitle() + " (#" + position + ")");
+            
+            // Обновляем UI с информацией о текущей карточке
+            updateCurrentCardInfo(currentItem);
+        }
     }
 
     @Override

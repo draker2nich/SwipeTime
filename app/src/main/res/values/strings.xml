@@ -55,4 +55,20 @@
     <string name="achievement_progress">Прогресс: %1$d%%</string>
     <string name="level_up">Уровень повышен!</string>
     <string name="xp_reward">+%1$d XP</string>
+    
+    <!-- Фильтры контента -->
+    <string name="filters_title">Настройки фильтров</string>
+    <string name="filters_genres">Жанры</string>
+    <string name="filters_countries">Страны</string>
+    <string name="filters_languages">Языки</string>
+    <string name="filters_tags">Интересы</string>
+    <string name="filters_duration">Продолжительность (минуты)</string>
+    <string name="filters_year">Год выхода</string>
+    <string name="filters_adult_content">Показывать контент 18+</string>
+    <string name="filters_reset">Сбросить</string>
+    <string name="filters_apply">Применить</string>
+    <string name="filters_applied">Фильтры применены</string>
+    <string name="filters_no_results">По вашим фильтрам ничего не найдено</string>
+    <string name="filters_btn_description">Настройки фильтров</string>
+    <string name="filters_close_btn_description">Закрыть фильтры</string>
 </resources>

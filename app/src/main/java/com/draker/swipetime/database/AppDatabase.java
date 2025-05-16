@@ -18,6 +18,7 @@ import com.draker.swipetime.database.dao.ReviewDao;
 import com.draker.swipetime.database.dao.TVShowDao;
 import com.draker.swipetime.database.dao.UserAchievementDao;
 import com.draker.swipetime.database.dao.UserDao;
+import com.draker.swipetime.database.dao.UserPreferencesDao;
 import com.draker.swipetime.database.dao.UserStatsDao;
 import com.draker.swipetime.database.entities.AchievementEntity;
 import com.draker.swipetime.database.entities.AnimeEntity;
@@ -29,6 +30,7 @@ import com.draker.swipetime.database.entities.ReviewEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
 import com.draker.swipetime.database.entities.UserAchievementCrossRef;
 import com.draker.swipetime.database.entities.UserEntity;
+import com.draker.swipetime.database.entities.UserPreferencesEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 
 /**
@@ -46,9 +48,10 @@ import com.draker.swipetime.database.entities.UserStatsEntity;
         AchievementEntity.class,
         UserAchievementCrossRef.class,
         ReviewEntity.class,
-        UserStatsEntity.class
+        UserStatsEntity.class,
+        UserPreferencesEntity.class
     },
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -250,6 +253,35 @@ public abstract class AppDatabase extends RoomDatabase {
                     "SELECT `id`, `last_login` FROM `users`");
         }
     };
+    
+    // Миграция с версии 4 на версию 5 - добавление таблицы user_preferences
+    private static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            // Проверяем существование таблицы
+            database.execSQL("DROP TABLE IF EXISTS `user_preferences`");
+            
+            // Создаем таблицу пользовательских настроек с правильной схемой
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_preferences` (" +
+                    "`user_id` TEXT NOT NULL, " +
+                    "`preferred_genres` TEXT, " +
+                    "`min_duration` INTEGER NOT NULL DEFAULT 0, " +
+                    "`max_duration` INTEGER NOT NULL DEFAULT 2147483647, " +
+                    "`preferred_countries` TEXT, " +
+                    "`preferred_languages` TEXT, " +
+                    "`min_year` INTEGER NOT NULL DEFAULT 1900, " +
+                    "`max_year` INTEGER NOT NULL DEFAULT 2100, " +
+                    "`interests_tags` TEXT, " +
+                    "`adult_content_enabled` INTEGER NOT NULL DEFAULT 0, " +
+                    "`created_at` INTEGER NOT NULL, " +
+                    "`updated_at` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`user_id`), " +
+                    "FOREIGN KEY(`user_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индекс для внешнего ключа
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_preferences_user_id` ON `user_preferences` (`user_id`)");
+        }
+    };
 
     // DAOs
     public abstract ContentDao contentDao();
@@ -263,6 +295,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract UserAchievementDao userAchievementDao();
     public abstract ReviewDao reviewDao();
     public abstract UserStatsDao userStatsDao();
+    public abstract UserPreferencesDao userPreferencesDao();
 
     // Singleton паттерн для доступа к базе данных
     public static synchronized AppDatabase getInstance(Context context) {
@@ -273,7 +306,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 DATABASE_NAME
             )
             .fallbackToDestructiveMigration() // При изменении схемы БД удаляем старую и создаем новую
-            .addMigrations(MIGRATION_1_2, MIGRATION_3_4) // Добавляем миграции
+            .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5) // Добавляем миграции
             .allowMainThreadQueries() // ВНИМАНИЕ: Временное решение для прототипа. В production-версии нужно использовать асинхронные запросы или LiveData
             .build();
         }
