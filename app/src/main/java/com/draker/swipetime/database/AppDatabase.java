@@ -18,6 +18,7 @@ import com.draker.swipetime.database.dao.ReviewDao;
 import com.draker.swipetime.database.dao.TVShowDao;
 import com.draker.swipetime.database.dao.UserAchievementDao;
 import com.draker.swipetime.database.dao.UserDao;
+import com.draker.swipetime.database.dao.UserStatsDao;
 import com.draker.swipetime.database.entities.AchievementEntity;
 import com.draker.swipetime.database.entities.AnimeEntity;
 import com.draker.swipetime.database.entities.BookEntity;
@@ -28,6 +29,7 @@ import com.draker.swipetime.database.entities.ReviewEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
 import com.draker.swipetime.database.entities.UserAchievementCrossRef;
 import com.draker.swipetime.database.entities.UserEntity;
+import com.draker.swipetime.database.entities.UserStatsEntity;
 
 /**
  * Главный класс базы данных приложения
@@ -43,9 +45,10 @@ import com.draker.swipetime.database.entities.UserEntity;
         UserEntity.class,
         AchievementEntity.class,
         UserAchievementCrossRef.class,
-        ReviewEntity.class
+        ReviewEntity.class,
+        UserStatsEntity.class
     },
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -218,6 +221,35 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE books_new RENAME TO books");
         }
     };
+    
+    // Миграция с версии 3 на версию 4 - добавление таблицы user_stats
+    private static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            // Создаем таблицу статистики пользователя
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_stats` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`user_id` TEXT NOT NULL, " +
+                    "`swipes_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "`right_swipes_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "`left_swipes_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "`ratings_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "`reviews_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "`consumed_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "`total_actions` INTEGER NOT NULL DEFAULT 0, " +
+                    "`streak_days` INTEGER NOT NULL DEFAULT 0, " +
+                    "`last_activity_date` INTEGER NOT NULL DEFAULT 0, " +
+                    "`achievements_count` INTEGER NOT NULL DEFAULT 0, " +
+                    "FOREIGN KEY(`user_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индекс для user_id
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_stats_user_id` ON `user_stats` (`user_id`)");
+            
+            // Заполняем таблицу статистики для существующих пользователей
+            database.execSQL("INSERT INTO `user_stats` (`user_id`, `last_activity_date`) " +
+                    "SELECT `id`, `last_login` FROM `users`");
+        }
+    };
 
     // DAOs
     public abstract ContentDao contentDao();
@@ -230,6 +262,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract AchievementDao achievementDao();
     public abstract UserAchievementDao userAchievementDao();
     public abstract ReviewDao reviewDao();
+    public abstract UserStatsDao userStatsDao();
 
     // Singleton паттерн для доступа к базе данных
     public static synchronized AppDatabase getInstance(Context context) {
@@ -240,7 +273,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 DATABASE_NAME
             )
             .fallbackToDestructiveMigration() // При изменении схемы БД удаляем старую и создаем новую
-            .addMigrations(MIGRATION_1_2) // Добавляем миграцию с версии 1 на версию 2
+            .addMigrations(MIGRATION_1_2, MIGRATION_3_4) // Добавляем миграции
             .allowMainThreadQueries() // ВНИМАНИЕ: Временное решение для прототипа. В production-версии нужно использовать асинхронные запросы или LiveData
             .build();
         }

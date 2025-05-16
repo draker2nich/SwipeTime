@@ -8,6 +8,7 @@ import com.draker.swipetime.fragments.CategoriesFragment;
 import com.draker.swipetime.fragments.LikedContentFragment;
 import com.draker.swipetime.fragments.ProfileFragment;
 import com.draker.swipetime.database.DbCleanerUtil;
+import com.draker.swipetime.utils.GamificationIntegrator;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -21,6 +22,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Закомментировано для сохранения данных между запусками
         // DbCleanerUtil.deleteDatabase(getApplicationContext());
+
+        // Инициализация системы геймификации
+        GamificationIntegrator.ensureUserInitialized(getApplicationContext());
 
         // Инициализация BottomNavigationView
         bottomNavigationView = findViewById(R.id.bottom_navigation);

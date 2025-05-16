@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC5</color>
     
-    <!-- Цвета основного приложения -->
-    <color name="primary">#FF6200EE</color>
-    <color name="primary_variant">#FF3700B3</color>
-    <color name="secondary">#FF03DAC5</color>
-    <color name="secondary_variant">#FF018786</color>
+    <!-- Цвета геймификации -->
+    <color name="colorExperience">#FFC107</color>
+    <color name="colorLevelUp">#4CAF50</color>
+    <color name="colorProgressBar">#2196F3</color>
     
-    <!-- Цвета категорий -->
-    <color name="category_movies">#FF5252</color>
-    <color name="category_tv_shows">#FF4081</color>
-    <color name="category_games">#7C4DFF</color>
-    <color name="category_books">#448AFF</color>
-    <color name="category_anime">#40C4FF</color>
-    <color name="category_music">#64FFDA</color>
+    <!-- Цвета категорий достижений -->
+    <color name="colorCategoryBeginner">#2196F3</color>
+    <color name="colorCategoryIntermediate">#FF9800</color>
+    <color name="colorCategoryAdvanced">#F44336</color>
+    <color name="colorCategoryExpert">#9C27B0</color>
+    <color name="colorCategoryCollector">#4CAF50</color>
+    <color name="colorCategorySocial">#03A9F4</color>
+    <color name="colorCategoryStreak">#FF5722</color>
 </resources>

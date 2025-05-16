@@ -30,6 +30,9 @@ import com.draker.swipetime.repository.ReviewRepository;
 import com.draker.swipetime.repository.TVShowRepository;
 import com.draker.swipetime.repository.UserRepository;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.draker.swipetime.utils.ActionLogger;
+import com.draker.swipetime.utils.GamificationIntegrator;
+import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.LikedItemsHelper;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -68,6 +71,9 @@ public class DetailLikedContentFragment extends Fragment {
     private GameRepository gameRepository;
     private BookRepository bookRepository;
     private AnimeRepository animeRepository;
+    
+    // Менеджер геймификации
+    private GamificationManager gamificationManager;
 
     // ID текущего пользователя (для демонстрации используем захардкоженный ID)
     private static final String CURRENT_USER_ID = "user_1";
@@ -99,6 +105,9 @@ public class DetailLikedContentFragment extends Fragment {
         gameRepository = new GameRepository(requireActivity().getApplication());
         bookRepository = new BookRepository(requireActivity().getApplication());
         animeRepository = new AnimeRepository(requireActivity().getApplication());
+        
+        // Инициализация менеджера геймификации
+        gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
 
         // Проверяем, существует ли текущий пользователь, если нет - создаем демо пользователя
         UserEntity currentUser = userRepository.getUserById(CURRENT_USER_ID);
@@ -241,6 +250,17 @@ public class DetailLikedContentFragment extends Fragment {
             String reviewText = reviewEditText.getText() != null ? reviewEditText.getText().toString() : "";
             boolean isWatched = watchedSwitch.isChecked();
             
+            // Логируем действия пользователя
+            ActionLogger.logRating(contentItem.getId(), contentItem.getTitle(), rating);
+            
+            if (!reviewText.isEmpty()) {
+                ActionLogger.logReview(contentItem.getId(), contentItem.getTitle());
+            }
+            
+            if (isWatched) {
+                ActionLogger.logCompleted(contentItem.getId(), contentItem.getTitle(), contentItem.getCategory());
+            }
+            
             // Создаем новый отзыв или обновляем существующий
             if (currentReview == null) {
                 currentReview = new ReviewEntity(
@@ -322,15 +342,11 @@ public class DetailLikedContentFragment extends Fragment {
      */
     private void addExperienceForReview() {
         try {
-            UserEntity user = userRepository.getUserById(CURRENT_USER_ID);
-            if (user != null) {
-                // Начисляем 15 опыта за отзыв
-                boolean levelUp = user.addExperience(15);
-                userRepository.update(user);
-                
-                if (levelUp) {
-                    Toast.makeText(getContext(), "Поздравляем! Вы достигли уровня " + user.getLevel(), Toast.LENGTH_SHORT).show();
-                }
+            // Используем GamificationIntegrator для начисления опыта
+            boolean levelUp = GamificationIntegrator.registerReview(getContext());
+            
+            if (levelUp) {
+                Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Log.e(TAG, "Ошибка при начислении опыта за отзыв: " + e.getMessage());
@@ -342,15 +358,11 @@ public class DetailLikedContentFragment extends Fragment {
      */
     private void addExperienceForCompletion() {
         try {
-            UserEntity user = userRepository.getUserById(CURRENT_USER_ID);
-            if (user != null) {
-                // Начисляем 30 опыта за просмотр/прочтение
-                boolean levelUp = user.addExperience(30);
-                userRepository.update(user);
-                
-                if (levelUp) {
-                    Toast.makeText(getContext(), "Поздравляем! Вы достигли уровня " + user.getLevel(), Toast.LENGTH_SHORT).show();
-                }
+            // Используем GamificationIntegrator для начисления опыта
+            boolean levelUp = GamificationIntegrator.registerCompletion(getContext(), contentItem.getId());
+            
+            if (levelUp) {
+                Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Log.e(TAG, "Ошибка при начислении опыта за просмотр: " + e.getMessage());

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Цвета для категорий контента -->
+    <color name="category_movies">#F44336</color>    <!-- Красный -->
+    <color name="category_tv_shows">#2196F3</color>  <!-- Синий -->
+    <color name="category_games">#4CAF50</color>     <!-- Зеленый -->
+    <color name="category_books">#FF9800</color>     <!-- Оранжевый -->
+    <color name="category_anime">#9C27B0</color>     <!-- Фиолетовый -->
+    <color name="category_music">#FF5722</color>     <!-- Темно-оранжевый -->
+</resources>

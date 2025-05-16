@@ -31,6 +31,9 @@ import com.draker.swipetime.repository.ContentRepository;
 import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
+import com.draker.swipetime.utils.ActionLogger;
+import com.draker.swipetime.utils.GamificationIntegrator;
+import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.LikedItemsHelper;
 import com.yuyakaido.android.cardstackview.CardStackLayoutManager;
 import com.yuyakaido.android.cardstackview.CardStackListener;
@@ -61,6 +64,10 @@ public class CardStackFragment extends Fragment implements CardStackListener {
     private BookRepository bookRepository;
     private AnimeRepository animeRepository;
     private ContentRepository contentRepository;
+    private GamificationManager gamificationManager;
+
+    // Текущий ID пользователя (в реальном приложении должен быть получен из аутентификации)
+    private static final String CURRENT_USER_ID = "user_1";
 
     private static final String ARG_CATEGORY = "category";
 
@@ -86,6 +93,9 @@ public class CardStackFragment extends Fragment implements CardStackListener {
         bookRepository = new BookRepository(requireActivity().getApplication());
         animeRepository = new AnimeRepository(requireActivity().getApplication());
         contentRepository = new ContentRepository(requireActivity().getApplication());
+        
+        // Инициализация менеджера геймификации
+        gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
     }
 
     @Nullable
@@ -568,11 +578,20 @@ public class CardStackFragment extends Fragment implements CardStackListener {
                 item.setLiked(true);
                 Toast.makeText(getContext(), "Добавлено в избранное: " + item.getTitle(), Toast.LENGTH_SHORT).show();
                 
+                // Логируем действие
+                ActionLogger.logSwipe(true, item.getId(), item.getTitle());
+                
                 // Используем вспомогательный класс для добавления элемента в избранное
                 LikedItemsHelper.addToLiked(item, categoryName, 
                                           movieRepository, tvShowRepository, 
                                           gameRepository, bookRepository, 
                                           animeRepository, contentRepository);
+                
+                // Начисляем опыт за свайп вправо
+                boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
+                if (levelUp) {
+                    Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
+                }
                 
                 // Проверяем наличие элемента в базе после добавления
                 boolean isFound = false;
@@ -616,6 +635,15 @@ public class CardStackFragment extends Fragment implements CardStackListener {
             } else if (direction == Direction.Left) {
                 // Пользователю не понравился элемент
                 Toast.makeText(getContext(), "Пропущено: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                
+                // Логируем действие
+                ActionLogger.logSwipe(false, item.getId(), item.getTitle());
+                
+                // Начисляем опыт за свайп влево
+                boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), false);
+                if (levelUp) {
+                    Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
+                }
             }
         } else {
             Log.e("CardStackFragment", "Ошибка позиции при свайпе: position=" + position + ", размер адаптера=" + adapter.getItemCount());
