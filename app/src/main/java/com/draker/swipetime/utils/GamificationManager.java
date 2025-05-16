@@ -755,4 +755,25 @@ public class GamificationManager {
             return progress;
         }
     }
+    
+    /**
+     * Инициализация статистики пользователя
+     * @param userId ID пользователя
+     */
+    public static void initUserStats(String userId) {
+        try {
+            AppDatabase db = AppDatabase.getInstance(null);
+            if (db != null) {
+                UserStatsEntity stats = new UserStatsEntity(userId);
+                stats.setSwipesCount(0);
+                stats.setRatingsCount(0);
+                stats.setReviewsCount(0);
+                stats.setConsumedCount(0);
+                stats.setStreakDays(0);
+                db.userStatsDao().insert(stats);
+            }
+        } catch (Exception e) {
+            Log.e("GamificationManager", "Ошибка при инициализации статистики пользователя: " + e.getMessage());
+        }
+    }
 }

@@ -12,6 +12,8 @@ lifecycle = "2.7.0"
 fragment = "1.7.1"
 cardstackview = "2.3.4"
 room = "2.6.1"
+firebase-bom = "32.8.0"
+play-services-auth = "21.0.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -28,6 +30,11 @@ fragment = { group = "androidx.fragment", name = "fragment", version.ref = "frag
 cardstackview = { group = "com.github.yuyakaido", name = "CardStackView", version.ref = "cardstackview" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+# Firebase libraries
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "play-services-auth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

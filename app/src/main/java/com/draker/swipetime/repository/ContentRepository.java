@@ -188,4 +188,27 @@ public class ContentRepository {
     public int getWatchedCount() {
         return contentDao.getWatchedCount();
     }
+    
+    /**
+     * Получить список понравившегося контента для пользователя
+     * @param userId ID пользователя
+     * @return список понравившегося контента
+     */
+    public List<ContentEntity> getLikedContentForUser(String userId) {
+        // В текущей реализации нет связи с пользователем, поэтому просто возвращаем все понравившиеся элементы
+        return contentDao.getLiked();
+    }
+    
+    /**
+     * Обновление или добавление контента
+     * @param content контент для обновления/добавления
+     */
+    public void updateOrInsert(ContentEntity content) {
+        ContentEntity existingContent = contentDao.getById(content.getId());
+        if (existingContent != null) {
+            update(content);
+        } else {
+            insert(content);
+        }
+    }
 }

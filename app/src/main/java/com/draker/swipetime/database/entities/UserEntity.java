@@ -64,6 +64,19 @@ public class UserEntity {
         this.updatedAt = System.currentTimeMillis();
         this.lastLogin = System.currentTimeMillis();
     }
+    
+    @Ignore
+    public UserEntity(@NonNull String id, String username, String email, String avatarUrl, int experience, int level) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.avatarUrl = avatarUrl;
+        this.experience = experience;
+        this.level = level;
+        this.createdAt = System.currentTimeMillis();
+        this.updatedAt = System.currentTimeMillis();
+        this.lastLogin = System.currentTimeMillis();
+    }
 
     @NonNull
     public String getId() {

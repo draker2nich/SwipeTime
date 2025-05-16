@@ -145,4 +145,20 @@ public class ReviewEntity {
     public void setContentType(String contentType) {
         this.contentType = contentType;
     }
+    
+    /**
+     * Получить временную метку для синхронизации
+     * @return временная метка обновления
+     */
+    public long getTimestamp() {
+        return updatedAt;
+    }
+    
+    /**
+     * Установить временную метку
+     * @param timestamp временная метка в миллисекундах
+     */
+    public void setTimestamp(long timestamp) {
+        this.updatedAt = timestamp;
+    }
 }

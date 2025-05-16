@@ -50,29 +50,37 @@ public class GamificationViewModel extends AndroidViewModel {
      * Загрузка данных пользователя из базы данных
      */
     public void loadUserData() {
+        loadUserData("user_1");
+    }
+    
+    /**
+     * Загрузка данных пользователя из базы данных по указанному ID
+     * @param userId ID пользователя
+     */
+    public void loadUserData(String userId) {
         try {
             // Загружаем данные пользователя
-            UserEntity user = database.userDao().getById(CURRENT_USER_ID);
+            UserEntity user = database.userDao().getById(userId);
             if (user == null) {
                 // Если пользователь не существует, создаем нового
-                user = new UserEntity(CURRENT_USER_ID, "Demo User", "demo@example.com", "");
+                user = new UserEntity(userId, "Demo User", "demo@example.com", "");
                 user.setExperience(0);
                 user.setLevel(1);
                 database.userDao().insert(user);
-                Log.d(TAG, "Создан новый пользователь с ID: " + CURRENT_USER_ID);
+                Log.d(TAG, "Создан новый пользователь с ID: " + userId);
             }
             currentUser.postValue(user);
             
             // Загружаем статистику пользователя
-            UserStatsEntity stats = gamificationManager.getUserStats(CURRENT_USER_ID);
+            UserStatsEntity stats = gamificationManager.getUserStats(userId);
             userStats.postValue(stats);
             
             // Загружаем достижения пользователя
-            List<GamificationManager.UserAchievementInfo> achievements = gamificationManager.getUserAchievements(CURRENT_USER_ID);
+            List<GamificationManager.UserAchievementInfo> achievements = gamificationManager.getUserAchievements(userId);
             userAchievements.postValue(achievements);
             
             // Получаем количество завершенных достижений
-            int completed = gamificationManager.getCompletedAchievementsCount(CURRENT_USER_ID);
+            int completed = gamificationManager.getCompletedAchievementsCount(userId);
             completedAchievementsCount.postValue(completed);
             
             // Получаем общее количество достижений

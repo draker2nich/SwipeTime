@@ -1,0 +1,28 @@
+package com.draker.swipetime.database;
+
+import android.content.Context;
+import android.util.Log;
+
+import androidx.sqlite.db.SupportSQLiteDatabase;
+
+import com.draker.swipetime.database.entities.AchievementEntity;
+import com.draker.swipetime.database.entities.AnimeEntity;
+import com.draker.swipetime.database.entities.BookEntity;
+import com.draker.swipetime.database.entities.ContentEntity;
+import com.draker.swipetime.database.entities.GameEntity;
+import com.draker.swipetime.database.entities.MovieEntity;
+import com.draker.swipetime.database.entities.TVShowEntity;
+import com.draker.swipetime.database.entities.UserEntity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+/**
+ * Класс для генерации тестовых данных
+ */
+public class DataGenerator {
+    // Удаленный и переименованный в .bak файл
+    // Чтобы избежать дублирования класса с com.draker.swipetime.database.DataGenerator
+}

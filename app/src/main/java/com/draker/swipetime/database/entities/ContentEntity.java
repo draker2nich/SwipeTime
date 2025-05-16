@@ -164,4 +164,37 @@ public class ContentEntity {
     public void setUpdatedAt(long updatedAt) {
         this.updatedAt = updatedAt;
     }
+    
+    /**
+     * Проверить, просмотрен/прослушан/прочитан ли контент
+     * @return true, если контент отмечен как просмотренный/прослушанный/прочитанный
+     */
+    public boolean isCompleted() {
+        return watched;
+    }
+    
+    /**
+     * Установить статус контента как просмотренный/прослушанный/прочитанный
+     * @param completed true, если контент отмечен как просмотренный/прослушанный/прочитанный
+     */
+    public void setCompleted(boolean completed) {
+        this.watched = completed;
+        this.updatedAt = System.currentTimeMillis();
+    }
+    
+    /**
+     * Получить временную метку создания/обновления
+     * @return временная метка в миллисекундах
+     */
+    public long getTimestamp() {
+        return updatedAt;
+    }
+    
+    /**
+     * Установить временную метку
+     * @param timestamp временная метка в миллисекундах
+     */
+    public void setTimestamp(long timestamp) {
+        this.updatedAt = timestamp;
+    }
 }

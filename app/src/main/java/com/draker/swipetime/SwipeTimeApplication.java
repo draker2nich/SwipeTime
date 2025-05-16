@@ -7,8 +7,10 @@ import com.draker.swipetime.database.AppDatabase;
 import com.draker.swipetime.database.DataGenerator;
 import com.draker.swipetime.database.DatabaseCleaner;
 import com.draker.swipetime.utils.AchievementNotifier;
+import com.draker.swipetime.utils.FirebaseAuthManager;
 import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.GamificationManager;
+import com.google.firebase.FirebaseApp;
 
 /**
  * Класс приложения для выполнения инициализации при запуске
@@ -21,12 +23,23 @@ public class SwipeTimeApplication extends Application {
     public void onCreate() {
         super.onCreate();
         
+        // Инициализация Firebase
+        FirebaseApp.initializeApp(this);
+        
         try {
             // Заполнить базу данных тестовыми данными
             DataGenerator.populateDatabase(this);
             
             // Инициализация системы геймификации
             GamificationIntegrator.ensureUserInitialized(this);
+            
+            // Проверка авторизации Firebase
+            FirebaseAuthManager authManager = FirebaseAuthManager.getInstance(this);
+            if (authManager.isUserSignedIn()) {
+                Log.d(TAG, "Пользователь Firebase авторизован: " + authManager.getCurrentUser().getEmail());
+            } else {
+                Log.d(TAG, "Пользователь Firebase не авторизован");
+            }
             
         } catch (IllegalStateException e) {
             if (e.getMessage() != null && e.getMessage().contains("Migration didn't properly handle")) {

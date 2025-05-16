@@ -261,4 +261,27 @@ public class ReviewRepository {
     public int getCountByUserId(String userId) {
         return reviewDao.getCountByUserId(userId);
     }
+    
+    /**
+     * Получить отзывы пользователя по ID
+     * @param userId ID пользователя
+     * @return список отзывов пользователя
+     */
+    public List<ReviewEntity> getReviewsByUserId(String userId) {
+        return getByUserId(userId);
+    }
+    
+    /**
+     * Добавить или обновить отзыв
+     * @param review отзыв для добавления или обновления
+     */
+    public void insertOrUpdate(ReviewEntity review) {
+        ReviewEntity existingReview = getByContentAndUserId(review.getContentId(), review.getUserId());
+        if (existingReview != null) {
+            review.setId(existingReview.getId());
+            update(review);
+        } else {
+            insert(review);
+        }
+    }
 }

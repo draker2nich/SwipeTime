@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "305522930969",
+    "project_id": "swipetime-97f4e",
+    "storage_bucket": "swipetime-97f4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:305522930969:android:c19a9a42733fdf7bd38188",
+        "android_client_info": {
+          "package_name": "com.draker.swipetime"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "305522930969-0cbmn63kpbp9k106r90dup5uvngdbtgh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.draker.swipetime",
+            "certificate_hash": "d61c675786a61b6c3c9c6a55de27ba4c03d23f8e"
+          }
+        },
+        {
+          "client_id": "305522930969-tk9vj77cqfnplae8ms5tesurd2oh1mir.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7cPxSqtYzOTdaruqgelNG0sTiKKqm6r4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "305522930969-tk9vj77cqfnplae8ms5tesurd2oh1mir.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

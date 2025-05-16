@@ -22,6 +22,29 @@
     <string name="level_rank_format">Уровень %1$d • %2$s</string>
     <string name="level_progress_format">%1$d%% до уровня %2$d</string>
     
+    <!-- Авторизация и синхронизация -->
+    <string name="auth_welcome_text">Добро пожаловать в SwipeTime</string>
+    <string name="auth_description_text">Войдите, чтобы сохранять свои предпочтения и достижения в облаке</string>
+    <string name="google_sign_in_button">Войти через Google</string>
+    <string name="sign_out_button">Выйти из аккаунта</string>
+    <string name="sync_data_button">Синхронизировать данные</string>
+    <string name="view_achievements_button">Посмотреть достижения</string>
+    <string name="offline_mode_active">Офлайн-режим активен. Некоторые функции недоступны.</string>
+    <string name="statistics_label">Ваша статистика</string>
+    <string name="swipes_label">Свайпы</string>
+    <string name="ratings_label">Оценки</string>
+    <string name="reviews_label">Отзывы</string>
+    <string name="achievements_label">Достижения</string>
+    <string name="progress_to_next_level">Прогресс до следующего уровня:</string>
+    <string name="test_actions_title">Тестовые действия (только для разработки)</string>
+    <string name="test_swipe_action">Имитировать свайп</string>
+    <string name="test_rating_action">Имитировать оценку</string>
+    <string name="test_review_action">Имитировать отзыв</string>
+    <string name="test_complete_action">Имитировать просмотр</string>
+    
+    <!-- Аутентификация Firebase -->
+    <string name="default_web_client_id" translatable="false">305522930969-tk9vj77cqfnplae8ms5tesurd2oh1mir.apps.googleusercontent.com</string>
+    
     <!-- Разрешения -->
     <string name="internet_permission">Необходим доступ к интернету для загрузки контента</string>
     
