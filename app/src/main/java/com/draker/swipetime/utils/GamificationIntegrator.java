@@ -36,6 +36,19 @@ public class GamificationIntegrator {
     /**
      * Регистрация оценки контента в системе геймификации
      * @param context контекст приложения
+     * @param contentId ID контента
+     * @param contentTitle название контента
+     * @param rating оценка (от 0 до 5)
+     * @return true если произошло повышение уровня
+     */
+    public static boolean registerRating(Context context, String contentId, String contentTitle, float rating) {
+        GamificationManager gamificationManager = GamificationManager.getInstance(context);
+        return gamificationManager.processUserAction(CURRENT_USER_ID, GamificationManager.ACTION_RATE, String.valueOf(rating));
+    }
+    
+    /**
+     * Регистрация оценки контента в системе геймификации
+     * @param context контекст приложения
      * @param rating оценка (от 0 до 5)
      * @return true если произошло повышение уровня
      */
@@ -47,6 +60,18 @@ public class GamificationIntegrator {
     /**
      * Регистрация написания рецензии в системе геймификации
      * @param context контекст приложения
+     * @param contentId ID контента
+     * @param contentTitle название контента
+     * @return true если произошло повышение уровня
+     */
+    public static boolean registerReview(Context context, String contentId, String contentTitle) {
+        GamificationManager gamificationManager = GamificationManager.getInstance(context);
+        return gamificationManager.processUserAction(CURRENT_USER_ID, GamificationManager.ACTION_REVIEW, contentId);
+    }
+    
+    /**
+     * Регистрация написания рецензии в системе геймификации
+     * @param context контекст приложения
      * @return true если произошло повышение уровня
      */
     public static boolean registerReview(Context context) {
@@ -54,6 +79,19 @@ public class GamificationIntegrator {
         return gamificationManager.processUserAction(CURRENT_USER_ID, GamificationManager.ACTION_REVIEW, "");
     }
 
+    /**
+     * Регистрация просмотра/прочтения контента в системе геймификации
+     * @param context контекст приложения
+     * @param contentId ID контента
+     * @param contentTitle название контента
+     * @param contentType тип контента
+     * @return true если произошло повышение уровня
+     */
+    public static boolean registerCompletion(Context context, String contentId, String contentTitle, String contentType) {
+        GamificationManager gamificationManager = GamificationManager.getInstance(context);
+        return gamificationManager.processUserAction(CURRENT_USER_ID, GamificationManager.ACTION_COMPLETE, contentId);
+    }
+    
     /**
      * Регистрация просмотра/прочтения контента в системе геймификации
      * @param context контекст приложения

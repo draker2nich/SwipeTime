@@ -261,6 +261,16 @@ public class DetailLikedContentFragment extends Fragment {
                 ActionLogger.logCompleted(contentItem.getId(), contentItem.getTitle(), contentItem.getCategory());
             }
             
+            // Начисляем опыт за оценку, если рейтинг > 0
+            if (rating > 0) {
+                addExperienceForRating(rating);
+            }
+            
+            // Начисляем опыт за рецензию, если она не пустая
+            if (!reviewText.isEmpty()) {
+                addExperienceForReview();
+            }
+            
             // Создаем новый отзыв или обновляем существующий
             if (currentReview == null) {
                 currentReview = new ReviewEntity(
@@ -283,8 +293,10 @@ public class DetailLikedContentFragment extends Fragment {
             // Обновляем статус "просмотрено/прочитано" в соответствующем репозитории
             updateWatchedStatus(isWatched);
             
-            // Начисляем опыт пользователю за отзыв
-            addExperienceForReview();
+            // Начисляем опыт за просмотр/прочтение, если переключатель включен
+            if (isWatched) {
+                addExperienceForCompletion();
+            }
             
             Toast.makeText(getContext(), "Отзыв сохранен", Toast.LENGTH_SHORT).show();
             
@@ -327,13 +339,26 @@ public class DetailLikedContentFragment extends Fragment {
                     break;
             }
             
-            // Если статус изменен на "просмотрено/прочитано", начисляем опыт
-            if (isWatched) {
-                addExperienceForCompletion();
-            }
-            
         } catch (Exception e) {
             Log.e(TAG, "Ошибка при обновлении статуса: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Начисление опыта пользователю за оценку
+     * 
+     * @param rating оценка (от 0 до 5)
+     */
+    private void addExperienceForRating(float rating) {
+        try {
+            // Используем GamificationIntegrator для начисления опыта
+            boolean levelUp = GamificationIntegrator.registerRating(getContext(), contentItem.getId(), contentItem.getTitle(), rating);
+            
+            if (levelUp) {
+                Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при начислении опыта за оценку: " + e.getMessage());
         }
     }
 
@@ -343,7 +368,7 @@ public class DetailLikedContentFragment extends Fragment {
     private void addExperienceForReview() {
         try {
             // Используем GamificationIntegrator для начисления опыта
-            boolean levelUp = GamificationIntegrator.registerReview(getContext());
+            boolean levelUp = GamificationIntegrator.registerReview(getContext(), contentItem.getId(), contentItem.getTitle());
             
             if (levelUp) {
                 Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
@@ -359,7 +384,12 @@ public class DetailLikedContentFragment extends Fragment {
     private void addExperienceForCompletion() {
         try {
             // Используем GamificationIntegrator для начисления опыта
-            boolean levelUp = GamificationIntegrator.registerCompletion(getContext(), contentItem.getId());
+            boolean levelUp = GamificationIntegrator.registerCompletion(
+                getContext(), 
+                contentItem.getId(), 
+                contentItem.getTitle(),
+                contentItem.getCategory()
+            );
             
             if (levelUp) {
                 Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
