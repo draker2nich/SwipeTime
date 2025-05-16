@@ -193,6 +193,7 @@ public class AuthProfileFragment extends Fragment {
         // Обработчики тестовых кнопок для имитации действий
         testSwipeButton.setOnClickListener(v -> {
             // Имитируем свайп вправо
+            Log.d(TAG, "Имитация свайпа для пользователя: " + gamificationViewModel.getCurrentUserId());
             boolean levelUp = gamificationViewModel.registerSwipe(true, "test_content_id", "Тестовый контент");
             
             // Обновляем UI
@@ -201,6 +202,7 @@ public class AuthProfileFragment extends Fragment {
         
         testRatingButton.setOnClickListener(v -> {
             // Имитируем оценку
+            Log.d(TAG, "Имитация оценки для пользователя: " + gamificationViewModel.getCurrentUserId());
             boolean levelUp = gamificationViewModel.registerRating("test_content_id", "Тестовый контент", 4.5f);
             
             // Обновляем UI
@@ -209,6 +211,7 @@ public class AuthProfileFragment extends Fragment {
         
         testReviewButton.setOnClickListener(v -> {
             // Имитируем написание рецензии
+            Log.d(TAG, "Имитация рецензии для пользователя: " + gamificationViewModel.getCurrentUserId());
             boolean levelUp = gamificationViewModel.registerReview("test_content_id", "Тестовый контент");
             
             // Обновляем UI
@@ -217,6 +220,7 @@ public class AuthProfileFragment extends Fragment {
         
         testCompleteButton.setOnClickListener(v -> {
             // Имитируем просмотр/прочтение
+            Log.d(TAG, "Имитация просмотра для пользователя: " + gamificationViewModel.getCurrentUserId());
             boolean levelUp = gamificationViewModel.registerCompletion("test_content_id", "Тестовый контент", "Фильмы");
             
             // Обновляем UI
@@ -224,9 +228,6 @@ public class AuthProfileFragment extends Fragment {
         });
     }
     
-    /**
-     * Проверка состояния авторизации
-     */
     private void checkAuthState() {
         isAuthenticated = authManager.isUserSignedIn();
         updateUI(isAuthenticated);
@@ -234,8 +235,13 @@ public class AuthProfileFragment extends Fragment {
         if (isAuthenticated) {
             FirebaseUser user = authManager.getCurrentUser();
             if (user != null) {
+                // Обновляем ID пользователя в ViewModel
+                String userId = user.getUid();
+                gamificationViewModel.updateCurrentUserId(userId);
+                Log.d(TAG, "Пользователь вошел в систему, ID: " + userId);
+                
                 // Загрузка данных пользователя из локальной базы
-                gamificationViewModel.loadUserData(user.getUid());
+                gamificationViewModel.loadUserData(userId);
                 
                 // Наблюдаем за изменением данных пользователя
                 gamificationViewModel.getCurrentUser().observe(getViewLifecycleOwner(), this::updateUserUI);
@@ -253,6 +259,8 @@ public class AuthProfileFragment extends Fragment {
                     });
                 });
             }
+        } else {
+            Log.d(TAG, "Пользователь не вошел в систему, используется ID по умолчанию: " + gamificationViewModel.getCurrentUserId());
         }
     }
     
@@ -287,6 +295,9 @@ public class AuthProfileFragment extends Fragment {
                 // Успешный вход
                 Log.d(TAG, "Вход выполнен успешно: " + user.getEmail());
                 Toast.makeText(requireContext(), "Добро пожаловать, " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
+                
+                // Обновление ID пользователя в ViewModel
+                gamificationViewModel.updateCurrentUserId(user.getUid());
                 
                 // Обновление UI
                 isAuthenticated = true;
@@ -478,6 +489,16 @@ public class AuthProfileFragment extends Fragment {
     private void showActionResult(String actionName, boolean levelUp) {
         String message = actionName + " выполнен" + (levelUp ? ". Уровень повышен!" : "!");
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+        
+        // Принудительно обновляем данные пользователя
+        FirebaseUser user = authManager.getCurrentUser();
+        if (user != null) {
+            gamificationViewModel.loadUserData(user.getUid());
+        } else {
+            gamificationViewModel.loadUserData();
+        }
+        
+        Log.d(TAG, "Действие " + actionName + " выполнено для пользователя: " + gamificationViewModel.getCurrentUserId());
     }
     
     @Override

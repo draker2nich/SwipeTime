@@ -13,8 +13,11 @@ import com.draker.swipetime.database.entities.AchievementEntity;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 import com.draker.swipetime.utils.ActionLogger;
+import com.draker.swipetime.utils.FirebaseAuthManager;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.XpLevelCalculator;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
 
@@ -24,10 +27,13 @@ import java.util.List;
 public class GamificationViewModel extends AndroidViewModel {
 
     private static final String TAG = "GamificationViewModel";
-    private static final String CURRENT_USER_ID = "user_1";
+    private static final String DEFAULT_USER_ID = "user_1";
 
     private final AppDatabase database;
     private final GamificationManager gamificationManager;
+    private final FirebaseAuthManager firebaseAuthManager;
+    
+    private String currentUserId = DEFAULT_USER_ID;
     
     private final MutableLiveData<UserEntity> currentUser = new MutableLiveData<>();
     private final MutableLiveData<UserStatsEntity> userStats = new MutableLiveData<>();
@@ -41,6 +47,18 @@ public class GamificationViewModel extends AndroidViewModel {
         super(application);
         database = AppDatabase.getInstance(application);
         gamificationManager = GamificationManager.getInstance(application);
+        firebaseAuthManager = FirebaseAuthManager.getInstance(application);
+        
+        // Проверяем, вошел ли пользователь
+        if (firebaseAuthManager.isUserSignedIn()) {
+            FirebaseUser user = firebaseAuthManager.getCurrentUser();
+            if (user != null) {
+                currentUserId = user.getUid();
+                Log.d(TAG, "Использую ID авторизованного пользователя: " + currentUserId);
+            }
+        } else {
+            Log.d(TAG, "Использую ID пользователя по умолчанию: " + DEFAULT_USER_ID);
+        }
         
         // Загружаем данные пользователя
         loadUserData();
@@ -50,7 +68,7 @@ public class GamificationViewModel extends AndroidViewModel {
      * Загрузка данных пользователя из базы данных
      */
     public void loadUserData() {
-        loadUserData("user_1");
+        loadUserData(currentUserId);
     }
     
     /**
@@ -59,13 +77,16 @@ public class GamificationViewModel extends AndroidViewModel {
      */
     public void loadUserData(String userId) {
         try {
+            // Обновляем currentUserId, если он изменился
+            currentUserId = userId;
+            
             // Загружаем данные пользователя
             UserEntity user = database.userDao().getById(userId);
             if (user == null) {
                 // Если пользователь не существует, создаем нового
                 user = new UserEntity(userId, "Demo User", "demo@example.com", "");
                 user.setExperience(0);
-                user.setLevel(1);
+                user.setLevel(0);
                 database.userDao().insert(user);
                 Log.d(TAG, "Создан новый пользователь с ID: " + userId);
             }
@@ -110,7 +131,7 @@ public class GamificationViewModel extends AndroidViewModel {
      * @return true если произошло повышение уровня
      */
     public boolean processUserAction(String action, String data) {
-        boolean levelUp = gamificationManager.processUserAction(CURRENT_USER_ID, action, data);
+        boolean levelUp = gamificationManager.processUserAction(currentUserId, action, data);
         
         // Обновляем LiveData
         loadUserData();
@@ -179,6 +200,26 @@ public class GamificationViewModel extends AndroidViewModel {
         
         // Обрабатываем действие
         return processUserAction(GamificationManager.ACTION_COMPLETE, contentId);
+    }
+    
+    /**
+     * Метод для обновления текущего ID пользователя после входа
+     * @param userId ID пользователя из Firebase
+     */
+    public void updateCurrentUserId(String userId) {
+        if (userId != null && !userId.isEmpty()) {
+            this.currentUserId = userId;
+            Log.d(TAG, "ID пользователя обновлен: " + userId);
+            loadUserData();
+        }
+    }
+    
+    /**
+     * Получить текущий ID пользователя
+     * @return ID пользователя
+     */
+    public String getCurrentUserId() {
+        return currentUserId;
     }
     
     // Геттеры для LiveData
