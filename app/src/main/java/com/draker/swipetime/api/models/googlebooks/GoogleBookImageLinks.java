@@ -77,20 +77,33 @@ public class GoogleBookImageLinks {
      * @return URL изображения или null
      */
     public String getBestAvailableImage() {
+        String imageUrl = null;
+        
+        // Сначала проверяем наличие изображений более высокого качества
         if (extraLarge != null && !extraLarge.isEmpty()) {
-            return extraLarge;
+            imageUrl = extraLarge;
         } else if (large != null && !large.isEmpty()) {
-            return large;
+            imageUrl = large;
         } else if (medium != null && !medium.isEmpty()) {
-            return medium;
+            imageUrl = medium;
         } else if (small != null && !small.isEmpty()) {
-            return small;
+            imageUrl = small;
         } else if (thumbnail != null && !thumbnail.isEmpty()) {
-            return thumbnail;
+            imageUrl = thumbnail;
         } else if (smallThumbnail != null && !smallThumbnail.isEmpty()) {
-            return smallThumbnail;
+            imageUrl = smallThumbnail;
         }
         
-        return null;
+        // Если нашли URL, заменяем http на https для предотвращения проблем с безопасностью в Android
+        if (imageUrl != null && imageUrl.startsWith("http://")) {
+            imageUrl = "https://" + imageUrl.substring(7);
+        }
+        
+        // Удаляем параметр zoom=1, который может ограничивать размер изображения
+        if (imageUrl != null && imageUrl.contains("&zoom=1")) {
+            imageUrl = imageUrl.replace("&zoom=1", "");
+        }
+        
+        return imageUrl;
     }
 }

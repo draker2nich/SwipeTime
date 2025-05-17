@@ -7,6 +7,7 @@ import com.draker.swipetime.api.ApiIntegrationManager;
 import com.draker.swipetime.database.AppDatabase;
 import com.draker.swipetime.database.DataGenerator;
 import com.draker.swipetime.database.DatabaseCleaner;
+import com.draker.swipetime.database.DbCleanerUtil;
 import com.draker.swipetime.utils.AchievementNotifier;
 import com.draker.swipetime.utils.FirebaseAuthManager;
 import com.draker.swipetime.utils.GamificationIntegrator;
@@ -32,8 +33,11 @@ public class SwipeTimeApplication extends Application {
         ImageCacheManager.initImageCache(this);
         
         try {
-            // Заполнить базу данных тестовыми данными
+            // Заполнить базу данных базовыми данными (только пользователя)
             DataGenerator.populateDatabase(this);
+            
+            // Очистка тестовых данных (если они есть)
+            DbCleanerUtil.clearTestData(this);
             
             // Инициализация системы геймификации
             GamificationIntegrator.ensureUserInitialized(this);
