@@ -3,6 +3,7 @@ package com.draker.swipetime;
 import android.app.Application;
 import android.util.Log;
 
+import com.draker.swipetime.api.ApiIntegrationManager;
 import com.draker.swipetime.database.AppDatabase;
 import com.draker.swipetime.database.DataGenerator;
 import com.draker.swipetime.database.DatabaseCleaner;
@@ -10,6 +11,7 @@ import com.draker.swipetime.utils.AchievementNotifier;
 import com.draker.swipetime.utils.FirebaseAuthManager;
 import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.GamificationManager;
+import com.draker.swipetime.utils.ImageCacheManager;
 import com.google.firebase.FirebaseApp;
 
 /**
@@ -26,6 +28,9 @@ public class SwipeTimeApplication extends Application {
         // Инициализация Firebase
         FirebaseApp.initializeApp(this);
         
+        // Инициализация кеша изображений
+        ImageCacheManager.initImageCache(this);
+        
         try {
             // Заполнить базу данных тестовыми данными
             DataGenerator.populateDatabase(this);
@@ -40,6 +45,9 @@ public class SwipeTimeApplication extends Application {
             } else {
                 Log.d(TAG, "Пользователь Firebase не авторизован");
             }
+            
+            // Инициализация интеграции внешних API
+            initializeApiIntegration();
             
         } catch (IllegalStateException e) {
             if (e.getMessage() != null && e.getMessage().contains("Migration didn't properly handle")) {
@@ -60,10 +68,34 @@ public class SwipeTimeApplication extends Application {
                     DataGenerator.populateDatabase(this);
                     GamificationIntegrator.ensureUserInitialized(this);
                     Log.d(TAG, "База данных успешно пересоздана");
+                    
+                    // Также инициализируем интеграцию внешних API
+                    initializeApiIntegration();
                 }
             } else {
                 throw e;
             }
         }
+    }
+    
+    /**
+     * Инициализировать интеграцию внешних API
+     */
+    private void initializeApiIntegration() {
+        // Загружаем данные асинхронно, чтобы не блокировать запуск приложения
+        new Thread(() -> {
+            ApiIntegrationManager apiManager = ApiIntegrationManager.getInstance(this);
+            apiManager.initializeApiIntegration(new ApiIntegrationManager.ApiInitCallback() {
+                @Override
+                public void onComplete(boolean success) {
+                    Log.d(TAG, "Инициализация интеграции API завершена с результатом: " + success);
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.e(TAG, "Ошибка при инициализации интеграции API: " + errorMessage);
+                }
+            });
+        }).start();
     }
 }

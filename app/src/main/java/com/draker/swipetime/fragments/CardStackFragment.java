@@ -89,6 +89,13 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
 
     // Флаг для отслеживания применения фильтров
     private boolean filtersApplied = false;
+    
+    // Флаги для отслеживания наличия данных в категориях
+    private boolean hasMovies = false;
+    private boolean hasTVShows = false;
+    private boolean hasGames = false;
+    private boolean hasBooks = false;
+    private boolean hasAnime = false;
 
     public static CardStackFragment newInstance(String category) {
         CardStackFragment fragment = new CardStackFragment();
@@ -128,6 +135,13 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
 
         // Инициализация ViewModel
         filterViewModel = new ViewModelProvider(this).get(FilterViewModel.class);
+        
+        // Проверяем наличие данных в категориях
+        hasMovies = movieRepository.getCount() >= 10;
+        hasTVShows = tvShowRepository.getCount() >= 10;
+        hasGames = gameRepository.getCount() >= 10;
+        hasBooks = bookRepository.getCount() >= 10;
+        hasAnime = animeRepository.getCount() >= 10;
     }
 
     @Nullable
@@ -276,6 +290,14 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         
         Log.d(TAG, "Отфильтрованных элементов: " + filteredItems.size());
         
+        // Если отфильтрованных элементов мало, загружаем дополнительные из API
+        if (filteredItems.size() < 10) {
+            Toast.makeText(getContext(), "Загрузка дополнительного контента...", Toast.LENGTH_SHORT).show();
+            
+            // Загружаем данные из API
+            loadAdditionalContentFromApi();
+        }
+        
         // Обновляем адаптер с отфильтрованным списком
         adapter.setItems(filteredItems);
         
@@ -334,11 +356,73 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                     preferencesRepository
             );
             
+            // Если элементов мало, загружаем дополнительные из API
+            if (allItems.size() < 10) {
+                Toast.makeText(getContext(), "Загрузка дополнительного контента...", Toast.LENGTH_SHORT).show();
+                
+                // Загружаем данные из API
+                loadAdditionalContentFromApi();
+            }
+            
             adapter.setItems(allItems);
         }
 
         cardStackView.setVisibility(View.VISIBLE);
         emptyCardsContainer.setVisibility(View.GONE);
+    }
+    
+    /**
+     * Загружает дополнительный контент из внешних API
+     */
+    private void loadAdditionalContentFromApi() {
+        // Создаем API менеджер
+        com.draker.swipetime.api.ApiIntegrationManager apiManager = 
+                com.draker.swipetime.api.ApiIntegrationManager.getInstance(
+                        requireActivity().getApplication()
+                );
+        
+        // Загружаем данные для текущей категории
+        apiManager.initializeApiIntegration(new com.draker.swipetime.api.ApiIntegrationManager.ApiInitCallback() {
+            @Override
+            public void onComplete(boolean success) {
+                if (success) {
+                    // Обновляем список элементов после загрузки
+                    getActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "Контент загружен успешно", Toast.LENGTH_SHORT).show();
+                        
+                        // Перезагружаем карточки
+                        if (filtersApplied) {
+                            reloadCardsWithFilters();
+                        } else {
+                            String userId = getCurrentUserId();
+                            List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
+                                    categoryName,
+                                    userId,
+                                    movieRepository,
+                                    tvShowRepository,
+                                    gameRepository,
+                                    bookRepository,
+                                    animeRepository,
+                                    contentRepository,
+                                    preferencesRepository
+                            );
+                            adapter.setItems(allItems);
+                        }
+                    });
+                } else {
+                    getActivity().runOnUiThread(() -> 
+                            Toast.makeText(getContext(), "Не удалось загрузить дополнительный контент", Toast.LENGTH_SHORT).show()
+                    );
+                }
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                getActivity().runOnUiThread(() -> 
+                        Toast.makeText(getContext(), "Ошибка загрузки контента: " + errorMessage, Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
     }
 
     // Кнопка для свайпа влево программно

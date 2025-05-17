@@ -58,58 +58,30 @@ public class DataGenerator {
                         ", контент=" + contentCount +
                         ", пользователи=" + userCount);
 
-                // Если данных нет, заполняем базу
-                boolean hasData = movieCount > 0 || tvShowCount > 0 || gameCount > 0 || bookCount > 0 || animeCount > 0;
-
-                if (!hasData) {
-                    Log.d(TAG, "База данных пуста, заполняем тестовыми данными");
-
-                    // Очистить базу данных перед заполнением
-                    clearDatabase(db);
-
-                    // Заполнить базу данными
-                    db.movieDao().insertAll(getMovies());
-                    db.tvShowDao().insertAll(getTVShows());
-                    db.gameDao().insertAll(getGames());
-                    db.bookDao().insertAll(getBooks());
-                    db.animeDao().insertAll(getAnimes());
-
-                    // Добавляем данные для музыки через ContentEntity
-                    db.contentDao().insertAll(getMusic());
-
+                // Если нет пользователей, создаем их
+                if (userCount == 0) {
+                    Log.d(TAG, "Создаем пользователей");
+                    
                     // Создаем пользователя
                     UserEntity defaultUser = getDefaultUser();
                     db.userDao().insert(defaultUser);
                     
                     // Создаем статистику пользователя
                     UserStatsEntity stats = new UserStatsEntity(defaultUser.getId());
-                    stats.setSwipesCount(15);
-                    stats.setRightSwipesCount(10);
-                    stats.setLeftSwipesCount(5);
-                    stats.setRatingsCount(3);
-                    stats.setReviewsCount(1);
-                    stats.setConsumedCount(2);
-                    stats.setStreakDays(1);
+                    stats.setSwipesCount(0);
+                    stats.setRightSwipesCount(0);
+                    stats.setLeftSwipesCount(0);
+                    stats.setRatingsCount(0);
+                    stats.setReviewsCount(0);
+                    stats.setConsumedCount(0);
+                    stats.setStreakDays(0);
                     stats.setLastActivityDate(System.currentTimeMillis());
                     db.userStatsDao().insert(stats);
 
                     // Инициализация базового набора достижений
-                    // Достижения будут автоматически созданы через GamificationManager
                     GamificationManager gamificationManager = GamificationManager.getInstance(context);
                     
-                    // Имитируем получение некоторых достижений
-                    UserAchievementCrossRef achievement1 = new UserAchievementCrossRef(
-                            defaultUser.getId(),
-                            "achievement-first-swipe",
-                            1
-                    );
-                    achievement1.setCompleted(true);
-                    achievement1.setCompletionDate(System.currentTimeMillis() - 86400000); // вчера
-                    db.userAchievementDao().insert(achievement1);
-
-                    Log.d(TAG, "База данных заполнена тестовыми данными");
-                } else {
-                    Log.d(TAG, "В базе данных уже есть данные, пропускаем заполнение");
+                    Log.d(TAG, "Пользователи созданы");
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Ошибка при заполнении базы данных: " + e.getMessage());

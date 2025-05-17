@@ -121,6 +121,10 @@ public class CardFilterIntegrator {
         resultItems = RecommendationEngine.generateRecommendations(resultItems, preferences, filteredEntities);
         Log.d(TAG, "Сформированы рекомендации для пользователя " + userId);
         
+        // Перемешиваем элементы для разнообразия отображения
+        resultItems = ContentShuffler.shuffleContent(resultItems, category);
+        Log.d(TAG, "Контент перемешан для предотвращения повторяющегося порядка");
+        
         return resultItems;
     }
     

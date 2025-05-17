@@ -1,6 +1,7 @@
 package com.draker.swipetime.adapters;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.draker.swipetime.R;
 import com.draker.swipetime.models.ContentItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.CardViewHolder> {
@@ -39,9 +41,25 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
         holder.title.setText(item.getTitle());
         holder.description.setText(item.getDescription());
         
-        // Здесь будет загрузка изображения с помощью библиотеки Glide или Picasso
-        // Пока используем заглушку
-        holder.image.setImageResource(R.drawable.placeholder_image);
+        // Проверяем валидность URL изображения и используем заглушки при необходимости
+        String imageUrl = com.draker.swipetime.utils.ImageUtil.getFallbackImageUrl(
+                item.getImageUrl(), 
+                item.getCategory()
+        );
+        
+        // Загрузка изображения с помощью Glide
+        try {
+            com.bumptech.glide.Glide.with(context)
+                .load(imageUrl)
+                .placeholder(R.drawable.placeholder_image)
+                .error(R.drawable.placeholder_image)
+                .centerCrop()
+                .into(holder.image);
+        } catch (Exception e) {
+            // В случае ошибки показываем заглушку
+            holder.image.setImageResource(R.drawable.placeholder_image);
+            Log.e("CardStackAdapter", "Error loading image: " + e.getMessage());
+        }
         
         // Скрываем индикаторы свайпа в начальном состоянии
         holder.leftIndicator.setAlpha(0f);
@@ -56,6 +74,25 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     public void setItems(List<ContentItem> items) {
         this.items = items;
         notifyDataSetChanged();
+    }
+
+    /**
+     * Очистить список элементов
+     */
+    public void clear() {
+        int size = this.items.size();
+        this.items.clear();
+        notifyItemRangeRemoved(0, size);
+    }
+    
+    /**
+     * Добавить список элементов
+     * @param newItems список новых элементов
+     */
+    public void addItems(List<ContentItem> newItems) {
+        int startPos = this.items.size();
+        this.items.addAll(newItems);
+        notifyItemRangeInserted(startPos, newItems.size());
     }
 
     public List<ContentItem> getItems() {
