@@ -1,6 +1,7 @@
 package com.draker.swipetime.viewmodels;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -9,6 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.draker.swipetime.database.entities.UserPreferencesEntity;
 import com.draker.swipetime.repository.UserPreferencesRepository;
+import com.draker.swipetime.utils.GamificationIntegrator;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,6 +23,7 @@ import java.util.List;
  */
 public class FilterViewModel extends AndroidViewModel {
 
+    private static final String TAG = "FilterViewModel";
     private UserPreferencesRepository preferencesRepository;
     private MutableLiveData<List<String>> selectedGenres = new MutableLiveData<>(new ArrayList<>());
     private MutableLiveData<List<String>> selectedCountries = new MutableLiveData<>(new ArrayList<>());
@@ -59,12 +62,16 @@ public class FilterViewModel extends AndroidViewModel {
         "Анимация", "Документальное", "Биография", "История", "Музыка"
     };
 
-    // ID текущего пользователя (фиксированный для демо)
-    private static final String CURRENT_USER_ID = "user_1";
+    // ID текущего пользователя
+    private String currentUserId;
 
     public FilterViewModel(@NonNull Application application) {
         super(application);
         preferencesRepository = new UserPreferencesRepository(application);
+        
+        // Получаем ID текущего пользователя
+        currentUserId = GamificationIntegrator.getCurrentUserId(application);
+        Log.d(TAG, "Используется ID пользователя для фильтров: " + currentUserId);
         
         // Загрузка сохраненных настроек пользователя
         loadUserPreferences();
@@ -74,28 +81,28 @@ public class FilterViewModel extends AndroidViewModel {
      * Загрузка настроек пользователя из репозитория
      */
     private void loadUserPreferences() {
-        UserPreferencesEntity preferences = preferencesRepository.getByUserId(CURRENT_USER_ID);
+        UserPreferencesEntity preferences = preferencesRepository.getByUserId(currentUserId);
         
         // Загружаем жанры
-        List<String> genres = preferencesRepository.getGenres(CURRENT_USER_ID);
+        List<String> genres = preferencesRepository.getGenres(currentUserId);
         if (!genres.isEmpty()) {
             selectedGenres.setValue(genres);
         }
         
         // Загружаем страны
-        List<String> countries = preferencesRepository.getCountries(CURRENT_USER_ID);
+        List<String> countries = preferencesRepository.getCountries(currentUserId);
         if (!countries.isEmpty()) {
             selectedCountries.setValue(countries);
         }
         
         // Загружаем языки
-        List<String> languages = preferencesRepository.getLanguages(CURRENT_USER_ID);
+        List<String> languages = preferencesRepository.getLanguages(currentUserId);
         if (!languages.isEmpty()) {
             selectedLanguages.setValue(languages);
         }
         
         // Загружаем теги интересов
-        List<String> tags = preferencesRepository.getInterestsTags(CURRENT_USER_ID);
+        List<String> tags = preferencesRepository.getInterestsTags(currentUserId);
         if (!tags.isEmpty()) {
             selectedTags.setValue(tags);
         }
@@ -115,40 +122,69 @@ public class FilterViewModel extends AndroidViewModel {
     }
 
     /**
+     * Обновление ID текущего пользователя и перезагрузка настроек
+     * @param userId ID пользователя
+     */
+    public void updateCurrentUserId(String userId) {
+        if (userId != null && !userId.isEmpty()) {
+            this.currentUserId = userId;
+            Log.d(TAG, "ID пользователя для фильтров обновлен: " + userId);
+            loadUserPreferences();
+        }
+    }
+
+    /**
+     * Получить текущий ID пользователя
+     * @return ID пользователя
+     */
+    public String getCurrentUserId() {
+        return currentUserId;
+    }
+
+    /**
      * Сохранение настроек пользователя в репозиторий
      */
     public void saveUserPreferences() {
+        // Проверяем, что ID пользователя актуальный
+        String userId = GamificationIntegrator.getCurrentUserId(getApplication());
+        if (!userId.equals(currentUserId)) {
+            currentUserId = userId;
+            Log.d(TAG, "ID пользователя обновлен перед сохранением настроек: " + userId);
+        }
+        
         // Сохраняем жанры
-        preferencesRepository.updateGenres(CURRENT_USER_ID, selectedGenres.getValue());
+        preferencesRepository.updateGenres(currentUserId, selectedGenres.getValue());
         
         // Сохраняем страны
-        preferencesRepository.updateCountries(CURRENT_USER_ID, selectedCountries.getValue());
+        preferencesRepository.updateCountries(currentUserId, selectedCountries.getValue());
         
         // Сохраняем языки
-        preferencesRepository.updateLanguages(CURRENT_USER_ID, selectedLanguages.getValue());
+        preferencesRepository.updateLanguages(currentUserId, selectedLanguages.getValue());
         
         // Сохраняем теги интересов
-        preferencesRepository.updateInterestsTags(CURRENT_USER_ID, selectedTags.getValue());
+        preferencesRepository.updateInterestsTags(currentUserId, selectedTags.getValue());
         
         // Сохраняем диапазон длительности
         preferencesRepository.updateDurationRange(
-            CURRENT_USER_ID, 
+            currentUserId, 
             minDuration.getValue() != null ? minDuration.getValue() : 0,
             maxDuration.getValue() != null ? maxDuration.getValue() : 300
         );
         
         // Сохраняем диапазон годов
         preferencesRepository.updateYearRange(
-            CURRENT_USER_ID,
+            currentUserId,
             minYear.getValue() != null ? minYear.getValue() : 1900,
             maxYear.getValue() != null ? maxYear.getValue() : 2025
         );
         
         // Сохраняем настройку контента 18+
         preferencesRepository.updateAdultContentEnabled(
-            CURRENT_USER_ID,
+            currentUserId,
             adultContentEnabled.getValue() != null && adultContentEnabled.getValue()
         );
+        
+        Log.d(TAG, "Настройки успешно сохранены для пользователя: " + currentUserId);
     }
 
     /**

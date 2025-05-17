@@ -125,4 +125,14 @@ public class TVShowEntity extends ContentEntity {
         this.watched = watched;
         setUpdatedAt(System.currentTimeMillis());
     }
+    
+    /**
+     * Получает среднюю длительность эпизода (в минутах)
+     * Метод-заглушка для системы рекомендаций
+     * @return примерная длительность эпизода в минутах (по умолчанию 40)
+     */
+    public int getEpisodeDuration() {
+        // В реальном приложении здесь должно быть реальное значение
+        return 40; // Стандартное значение для большинства сериалов
+    }
 }

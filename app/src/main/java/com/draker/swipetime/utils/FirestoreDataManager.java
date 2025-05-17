@@ -85,15 +85,20 @@ public class FirestoreDataManager {
     public void syncUserData(String userId, final SyncCallback syncCallback) {
         // Проверка доступности сети
         if (!networkHelper.isInternetAvailable()) {
+            Log.w(TAG, "Отсутствует подключение к интернету, синхронизация отложена");
             if (syncCallback != null) {
                 syncCallback.onFailure("Отсутствует подключение к интернету");
             }
+            
+            // Сохраняем информацию о необходимости синхронизации
+            scheduleSync(userId);
             return;
         }
 
         // Проверка авторизации
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser == null || !currentUser.getUid().equals(userId)) {
+            Log.w(TAG, "Пользователь не авторизован или ID не совпадает");
             if (syncCallback != null) {
                 syncCallback.onFailure("Пользователь не авторизован");
             }
@@ -106,12 +111,15 @@ public class FirestoreDataManager {
                 // Загрузка локальных данных пользователя
                 UserEntity localUser = userRepository.getUserById(userId);
                 if (localUser == null) {
+                    Log.e(TAG, "Пользователь не найден в локальной базе данных: " + userId);
                     if (syncCallback != null) {
                         syncCallback.onFailure("Пользователь не найден в локальной базе данных");
                     }
                     return;
                 }
 
+                Log.d(TAG, "Начинаем синхронизацию данных пользователя: " + userId);
+                
                 // Загрузка и сохранение данных пользователя
                 syncUserProfile(localUser);
                 
@@ -121,17 +129,48 @@ public class FirestoreDataManager {
                 // Синхронизация отзывов
                 syncReviews(userId);
                 
+                // Убираем запись о необходимости синхронизации
+                clearSyncFlag(userId);
+                
                 // Завершение синхронизации
                 if (syncCallback != null) {
                     syncCallback.onSuccess();
                 }
+                
+                Log.d(TAG, "Синхронизация данных пользователя успешно завершена: " + userId);
             } catch (Exception e) {
                 Log.e(TAG, "Ошибка синхронизации данных", e);
+                
+                // Сохраняем информацию о необходимости синхронизации
+                scheduleSync(userId);
+                
                 if (syncCallback != null) {
                     syncCallback.onFailure("Ошибка синхронизации: " + e.getMessage());
                 }
             }
         });
+    }
+    
+    /**
+     * Сохраняет информацию о необходимости синхронизации
+     * @param userId ID пользователя
+     */
+    private void scheduleSync(String userId) {
+        // TODO: Здесь можно реализовать механизм отложенной синхронизации
+        // Например, сохранить в SharedPreferences время последней неудачной попытки
+        // и ID пользователя для последующей синхронизации
+        
+        Log.d(TAG, "Синхронизация для пользователя " + userId + " отложена");
+    }
+    
+    /**
+     * Удаляет запись о необходимости синхронизации
+     * @param userId ID пользователя
+     */
+    private void clearSyncFlag(String userId) {
+        // TODO: Здесь можно удалить информацию об отложенной синхронизации
+        
+        Log.d(TAG, "Флаг синхронизации для пользователя " + userId + " очищен");
     }
 
     /**
@@ -139,6 +178,13 @@ public class FirestoreDataManager {
      * @param localUser локальные данные пользователя
      */
     private void syncUserProfile(UserEntity localUser) {
+        if (localUser == null || localUser.getId() == null) {
+            Log.e(TAG, "Ошибка синхронизации: данные пользователя недействительны");
+            return;
+        }
+        
+        Log.d(TAG, "Синхронизация профиля пользователя: " + localUser.getUsername() + " (ID: " + localUser.getId() + ")");
+        
         // Преобразование в Map для Firestore
         Map<String, Object> userData = new HashMap<>();
         userData.put("username", localUser.getUsername());
@@ -148,7 +194,7 @@ public class FirestoreDataManager {
         userData.put("level", localUser.getLevel());
         userData.put("lastUpdated", System.currentTimeMillis());
 
-        // Сохранение в Firestore
+        // Сохранение в Firestore с обработкой результата
         firestore.collection(USERS_COLLECTION)
                 .document(localUser.getId())
                 .set(userData, SetOptions.merge())
@@ -156,9 +202,11 @@ public class FirestoreDataManager {
                     Log.d(TAG, "Профиль пользователя успешно синхронизирован");
                     syncUserStats(localUser.getId());
                 })
-                .addOnFailureListener(e -> 
-                    Log.e(TAG, "Ошибка сохранения профиля пользователя", e)
-                );
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Ошибка сохранения профиля пользователя", e);
+                    // Сохраняем информацию об ошибке для возможности повторной попытки позже
+                    // TODO: Добавить механизм отложенной синхронизации
+                });
     }
 
     /**
@@ -195,8 +243,23 @@ public class FirestoreDataManager {
         // Получение локальных данных о понравившемся контенте
         List<ContentEntity> likedContent = contentRepository.getLikedContentForUser(userId);
         
+        // Проверка наличия данных
+        if (likedContent == null || likedContent.isEmpty()) {
+            Log.d(TAG, "Нет понравившегося контента для синхронизации");
+            return;
+        }
+        
+        Log.d(TAG, "Начинаем синхронизацию " + likedContent.size() + " элементов понравившегося контента");
+        
         // Для каждого элемента контента
         for (ContentEntity content : likedContent) {
+            if (content == null || content.getId() == null) {
+                Log.w(TAG, "Пропуск недействительного элемента контента");
+                continue;
+            }
+            
+            Log.d(TAG, "Синхронизация элемента: " + content.getTitle() + " (ID: " + content.getId() + ")");
+            
             Map<String, Object> contentData = new HashMap<>();
             contentData.put("contentId", content.getId());
             contentData.put("title", content.getTitle());
@@ -206,8 +269,9 @@ public class FirestoreDataManager {
             contentData.put("rating", content.getRating());
             contentData.put("completed", content.isCompleted());
             contentData.put("timestamp", content.getTimestamp());
+            contentData.put("lastUpdated", System.currentTimeMillis());
 
-            // Сохранение в Firestore
+            // Сохранение в Firestore с обработкой результата
             firestore.collection(USERS_COLLECTION)
                     .document(userId)
                     .collection(LIKED_CONTENT_COLLECTION)
@@ -216,9 +280,10 @@ public class FirestoreDataManager {
                     .addOnSuccessListener(aVoid -> 
                         Log.d(TAG, "Контент успешно синхронизирован: " + content.getId())
                     )
-                    .addOnFailureListener(e -> 
-                        Log.e(TAG, "Ошибка сохранения контента: " + content.getId(), e)
-                    );
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Ошибка сохранения контента: " + content.getId(), e);
+                        // Здесь можно добавить логику для повторных попыток или отложенной синхронизации
+                    });
         }
     }
 
@@ -230,16 +295,32 @@ public class FirestoreDataManager {
         // Получение локальных данных об отзывах
         List<ReviewEntity> reviews = reviewRepository.getReviewsByUserId(userId);
         
+        // Проверка наличия данных
+        if (reviews == null || reviews.isEmpty()) {
+            Log.d(TAG, "Нет отзывов для синхронизации");
+            return;
+        }
+        
+        Log.d(TAG, "Начинаем синхронизацию " + reviews.size() + " отзывов");
+        
         // Для каждого отзыва
         for (ReviewEntity review : reviews) {
+            if (review == null || review.getContentId() == null) {
+                Log.w(TAG, "Пропуск недействительного отзыва");
+                continue;
+            }
+            
+            Log.d(TAG, "Синхронизация отзыва для элемента с ID: " + review.getContentId());
+            
             Map<String, Object> reviewData = new HashMap<>();
             reviewData.put("userId", review.getUserId());
             reviewData.put("contentId", review.getContentId());
             reviewData.put("text", review.getText());
             reviewData.put("rating", review.getRating());
             reviewData.put("timestamp", review.getTimestamp());
+            reviewData.put("lastUpdated", System.currentTimeMillis());
 
-            // Сохранение в Firestore
+            // Сохранение в Firestore с обработкой результата
             firestore.collection(USERS_COLLECTION)
                     .document(userId)
                     .collection(REVIEWS_COLLECTION)
@@ -248,9 +329,10 @@ public class FirestoreDataManager {
                     .addOnSuccessListener(aVoid -> 
                         Log.d(TAG, "Отзыв успешно синхронизирован: " + review.getContentId())
                     )
-                    .addOnFailureListener(e -> 
-                        Log.e(TAG, "Ошибка сохранения отзыва: " + review.getContentId(), e)
-                    );
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Ошибка сохранения отзыва: " + review.getContentId(), e);
+                        // Здесь можно добавить логику для повторных попыток или отложенной синхронизации
+                    });
         }
     }
 

@@ -75,8 +75,8 @@ public class DetailLikedContentFragment extends Fragment {
     // Менеджер геймификации
     private GamificationManager gamificationManager;
 
-    // ID текущего пользователя (для демонстрации используем захардкоженный ID)
-    private static final String CURRENT_USER_ID = "user_1";
+    // ID текущего пользователя
+    private String currentUserId;
 
     /**
      * Создает новый экземпляр фрагмента с переданными данными о контенте
@@ -96,6 +96,10 @@ public class DetailLikedContentFragment extends Fragment {
             contentItem = (ContentItem) getArguments().getSerializable(ARG_CONTENT_ITEM);
         }
 
+        // Получаем ID текущего пользователя
+        currentUserId = GamificationIntegrator.getCurrentUserId(requireContext());
+        Log.d(TAG, "Используется ID пользователя: " + currentUserId);
+
         // Инициализация репозиториев
         reviewRepository = new ReviewRepository(requireActivity().getApplication());
         userRepository = new UserRepository(requireActivity().getApplication());
@@ -110,9 +114,9 @@ public class DetailLikedContentFragment extends Fragment {
         gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
 
         // Проверяем, существует ли текущий пользователь, если нет - создаем демо пользователя
-        UserEntity currentUser = userRepository.getUserById(CURRENT_USER_ID);
+        UserEntity currentUser = userRepository.getUserById(currentUserId);
         if (currentUser == null) {
-            currentUser = new UserEntity(CURRENT_USER_ID, "Demo User", "demo@example.com", null);
+            currentUser = new UserEntity(currentUserId, "Demo User", "demo@example.com", null);
             userRepository.insert(currentUser);
         }
     }
@@ -197,7 +201,7 @@ public class DetailLikedContentFragment extends Fragment {
     private void loadReviewData() {
         try {
             // Пытаемся найти существующий отзыв для данного пользователя и контента
-            currentReview = reviewRepository.getByContentAndUserId(contentItem.getId(), CURRENT_USER_ID);
+            currentReview = reviewRepository.getByContentAndUserId(contentItem.getId(), currentUserId);
             
             if (currentReview != null) {
                 // Если отзыв найден, заполняем UI
@@ -274,7 +278,7 @@ public class DetailLikedContentFragment extends Fragment {
             // Создаем новый отзыв или обновляем существующий
             if (currentReview == null) {
                 currentReview = new ReviewEntity(
-                    CURRENT_USER_ID,
+                    currentUserId,
                     contentItem.getId(),
                     rating,
                     reviewText,

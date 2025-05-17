@@ -17,12 +17,136 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Утилитарный класс для фильтрации контента в соответствии с предпочтениями пользователя
+ * Вспомогательный класс для работы с пользовательскими фильтрами контента
  */
 public class ContentFilterHelper {
-
     private static final String TAG = "ContentFilterHelper";
 
+    /**
+     * Проверяет, есть ли активные фильтры у пользователя
+     * 
+     * @param preferences предпочтения пользователя
+     * @return true, если есть хотя бы один активный фильтр
+     */
+    public static boolean hasActiveFilters(UserPreferencesEntity preferences) {
+        if (preferences == null) {
+            return false;
+        }
+        
+        return (preferences.getPreferredGenres() != null && !preferences.getPreferredGenres().isEmpty()) ||
+               (preferences.getPreferredCountries() != null && !preferences.getPreferredCountries().isEmpty()) ||
+               (preferences.getPreferredLanguages() != null && !preferences.getPreferredLanguages().isEmpty()) ||
+               (preferences.getInterestsTags() != null && !preferences.getInterestsTags().isEmpty()) ||
+               preferences.getMinDuration() > 0 ||
+               preferences.getMaxDuration() < Integer.MAX_VALUE ||
+               preferences.getMinYear() > 1900 ||
+               preferences.getMaxYear() < 2025 ||
+               preferences.isAdultContentEnabled();
+    }
+    
+    /**
+     * Проверяет, содержит ли JSON-строка указанное значение
+     * 
+     * @param jsonString JSON-строка массива строк
+     * @param valueToCheck значение для проверки
+     * @return true, если значение содержится в JSON-массиве
+     */
+    public static boolean jsonContains(String jsonString, String valueToCheck) {
+        if (jsonString == null || jsonString.isEmpty() || valueToCheck == null) {
+            return false;
+        }
+        
+        try {
+            JSONArray jsonArray = new JSONArray(jsonString);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                if (valueToCheck.equalsIgnoreCase(jsonArray.getString(i))) {
+                    return true;
+                }
+            }
+        } catch (JSONException e) {
+            return false;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Получает количество активных фильтров
+     * 
+     * @param preferences предпочтения пользователя
+     * @return количество активных фильтров
+     */
+    public static int getActiveFiltersCount(UserPreferencesEntity preferences) {
+        if (preferences == null) {
+            return 0;
+        }
+        
+        int count = 0;
+        
+        // Подсчет фильтров по жанрам
+        if (preferences.getPreferredGenres() != null && !preferences.getPreferredGenres().isEmpty()) {
+            try {
+                JSONArray jsonArray = new JSONArray(preferences.getPreferredGenres());
+                count += jsonArray.length();
+            } catch (JSONException e) {
+                // Игнорируем ошибку
+            }
+        }
+        
+        // Подсчет фильтров по странам
+        if (preferences.getPreferredCountries() != null && !preferences.getPreferredCountries().isEmpty()) {
+            try {
+                JSONArray jsonArray = new JSONArray(preferences.getPreferredCountries());
+                count += jsonArray.length();
+            } catch (JSONException e) {
+                // Игнорируем ошибку
+            }
+        }
+        
+        // Подсчет фильтров по языкам
+        if (preferences.getPreferredLanguages() != null && !preferences.getPreferredLanguages().isEmpty()) {
+            try {
+                JSONArray jsonArray = new JSONArray(preferences.getPreferredLanguages());
+                count += jsonArray.length();
+            } catch (JSONException e) {
+                // Игнорируем ошибку
+            }
+        }
+        
+        // Подсчет фильтров по тегам интересов
+        if (preferences.getInterestsTags() != null && !preferences.getInterestsTags().isEmpty()) {
+            try {
+                JSONArray jsonArray = new JSONArray(preferences.getInterestsTags());
+                count += jsonArray.length();
+            } catch (JSONException e) {
+                // Игнорируем ошибку
+            }
+        }
+        
+        // Фильтры по диапазону годов
+        if (preferences.getMinYear() > 1900) {
+            count++;
+        }
+        if (preferences.getMaxYear() < 2025) {
+            count++;
+        }
+        
+        // Фильтры по диапазону длительности
+        if (preferences.getMinDuration() > 0) {
+            count++;
+        }
+        if (preferences.getMaxDuration() < Integer.MAX_VALUE) {
+            count++;
+        }
+        
+        // Фильтр контента 18+
+        if (preferences.isAdultContentEnabled()) {
+            count++;
+        }
+        
+        return count;
+    }
+    
     /**
      * Применяет фильтры пользователя к списку контента
      * @param contentList список контента
@@ -192,17 +316,22 @@ public class ContentFilterHelper {
     /**
      * Парсит JSON-строку в список строк
      * @param jsonString JSON-строка
-     * @return список строк
-     * @throws JSONException если ошибка парсинга
+     * @return список строк или пустой список в случае ошибки
      */
-    private static List<String> parseJsonArray(String jsonString) throws JSONException {
+    private static List<String> parseJsonArray(String jsonString) {
         List<String> result = new ArrayList<>();
         
-        if (jsonString != null && !jsonString.isEmpty()) {
+        if (jsonString == null || jsonString.isEmpty()) {
+            return result;
+        }
+        
+        try {
             JSONArray jsonArray = new JSONArray(jsonString);
             for (int i = 0; i < jsonArray.length(); i++) {
-                result.add(jsonArray.getString(i));
+                result.add(jsonArray.getString(i).toLowerCase());
             }
+        } catch (JSONException e) {
+            Log.e(TAG, "Ошибка при парсинге JSON: " + e.getMessage());
         }
         
         return result;

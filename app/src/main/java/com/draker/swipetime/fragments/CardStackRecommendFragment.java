@@ -1,7 +1,9 @@
 package com.draker.swipetime.fragments;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,14 +22,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.draker.swipetime.R;
 import com.draker.swipetime.adapters.CardStackAdapter;
-import com.draker.swipetime.database.entities.AnimeEntity;
-import com.draker.swipetime.database.entities.BookEntity;
-import com.draker.swipetime.database.entities.ContentEntity;
-import com.draker.swipetime.database.entities.GameEntity;
-import com.draker.swipetime.database.entities.MovieEntity;
-import com.draker.swipetime.database.entities.TVShowEntity;
-import com.draker.swipetime.database.entities.UserPreferencesEntity;
 import com.draker.swipetime.models.ContentItem;
+import com.draker.swipetime.recommendations.RecommendationService;
 import com.draker.swipetime.repository.AnimeRepository;
 import com.draker.swipetime.repository.BookRepository;
 import com.draker.swipetime.repository.ContentRepository;
@@ -36,16 +32,13 @@ import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
 import com.draker.swipetime.repository.UserPreferencesRepository;
 import com.draker.swipetime.utils.ActionLogger;
-import com.draker.swipetime.utils.CardFilterIntegrator;
+import com.draker.swipetime.utils.CardFilterIntegratorV2;
 import com.draker.swipetime.utils.CardInfoHelper;
 import com.draker.swipetime.utils.ContentFilterHelper;
 import com.draker.swipetime.utils.FirestoreDataManager;
 import com.draker.swipetime.utils.GamificationIntegrator;
-import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.LikedItemsHelper;
 import com.draker.swipetime.viewmodels.FilterViewModel;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.yuyakaido.android.cardstackview.CardStackLayoutManager;
 import com.yuyakaido.android.cardstackview.CardStackListener;
 import com.yuyakaido.android.cardstackview.CardStackView;
@@ -58,9 +51,12 @@ import com.yuyakaido.android.cardstackview.SwipeableMethod;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CardStackFragment extends Fragment implements CardStackListener, FilterSettingsFragment.OnFilterSettingsClosedListener {
-
-    private static final String TAG = "CardStackFragment";
+/**
+ * Фрагмент для отображения карточек контента с интегрированной системой рекомендаций
+ */
+public class CardStackRecommendFragment extends Fragment implements CardStackListener, FilterSettingsFragment.OnFilterSettingsClosedListener {
+    private static final String TAG = "CardStackRecommendFrag";
+    private static final int DEFAULT_RECOMMENDATIONS_COUNT = 30;
 
     private CardStackView cardStackView;
     private CardStackLayoutManager manager;
@@ -69,7 +65,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
     private Button reloadButton;
     private ImageButton filterButton;
     private TextView categoryTitleView;
-    private TextView filtersAppliedIndicator;
+    private TextView recommendationStatusText;
     private String categoryName;
 
     // Репозитории для работы с базой данных
@@ -80,18 +76,20 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
     private AnimeRepository animeRepository;
     private ContentRepository contentRepository;
     private UserPreferencesRepository preferencesRepository;
-    private GamificationManager gamificationManager;
-
+    
+    // Сервис рекомендаций
+    private RecommendationService recommendationService;
+    
     // ViewModel для фильтров
     private FilterViewModel filterViewModel;
-
-    private static final String ARG_CATEGORY = "category";
 
     // Флаг для отслеживания применения фильтров
     private boolean filtersApplied = false;
 
-    public static CardStackFragment newInstance(String category) {
-        CardStackFragment fragment = new CardStackFragment();
+    private static final String ARG_CATEGORY = "category";
+
+    public static CardStackRecommendFragment newInstance(String category) {
+        CardStackRecommendFragment fragment = new CardStackRecommendFragment();
         Bundle args = new Bundle();
         args.putString(ARG_CATEGORY, category);
         fragment.setArguments(args);
@@ -122,10 +120,10 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         animeRepository = new AnimeRepository(requireActivity().getApplication());
         contentRepository = new ContentRepository(requireActivity().getApplication());
         preferencesRepository = new UserPreferencesRepository(requireActivity().getApplication());
-
-        // Инициализация менеджера геймификации
-        gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
-
+        
+        // Инициализация сервиса рекомендаций
+        recommendationService = RecommendationService.getInstance(requireActivity().getApplication());
+        
         // Инициализация ViewModel
         filterViewModel = new ViewModelProvider(this).get(FilterViewModel.class);
     }
@@ -146,88 +144,135 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         reloadButton = view.findViewById(R.id.reload_button);
         filterButton = view.findViewById(R.id.btn_filter);
         categoryTitleView = view.findViewById(R.id.category_title);
-        filtersAppliedIndicator = view.findViewById(R.id.filters_applied_indicator);
-
+        recommendationStatusText = view.findViewById(R.id.filters_applied_indicator);
+        
         // Устанавливаем название категории
         categoryTitleView.setText(categoryName);
-
+        
+        // Делаем индикатор рекомендаций более заметным
+        recommendationStatusText = view.findViewById(R.id.filters_applied_indicator);
+        if (recommendationStatusText != null) {
+            recommendationStatusText.setText("⭐ ИИ-РЕКОМЕНДАЦИИ АКТИВНЫ ⭐");
+            recommendationStatusText.setVisibility(View.VISIBLE);
+            recommendationStatusText.setTextSize(14);
+            recommendationStatusText.setTextColor(Color.GREEN);
+            recommendationStatusText.setPadding(10, 10, 10, 10);
+            // Если доступен, установим фон
+            try {
+                recommendationStatusText.setBackgroundColor(Color.parseColor("#33000000"));
+            } catch (Exception e) {
+                Log.e(TAG, "Ошибка при установке цвета фона: " + e.getMessage());
+            }
+        } else {
+            // Если не можем найти TextView, создадим новый
+            Log.w(TAG, "Не найден TextView с id filters_applied_indicator, создаем новый");
+            TextView newStatusText = new TextView(getContext());
+            newStatusText.setText("⭐ ИИ-РЕКОМЕНДАЦИИ АКТИВНЫ ⭐");
+            newStatusText.setTextColor(Color.GREEN);
+            newStatusText.setTextSize(14);
+            newStatusText.setPadding(10, 10, 10, 10);
+            newStatusText.setGravity(Gravity.CENTER);
+            
+            try {
+                newStatusText.setBackgroundColor(Color.parseColor("#33000000"));
+            } catch (Exception e) {
+                Log.e(TAG, "Ошибка при установке цвета фона: " + e.getMessage());
+            }
+            
+            // Найдем родительский контейнер и добавим TextView
+            ViewGroup parent = (ViewGroup) categoryTitleView.getParent();
+            if (parent != null) {
+                parent.addView(newStatusText);
+                recommendationStatusText = newStatusText;
+            }
+        }
+        
         // Установка слушателя для кнопки фильтров
         filterButton.setOnClickListener(v -> openFilterSettings());
-
-        // Выводим отладочную информацию о количестве элементов в базе данных
-        Log.d(TAG, "Категория: " + categoryName);
-        Log.d(TAG, "Количество фильмов в базе: " + movieRepository.getCount());
-        Log.d(TAG, "Количество сериалов в базе: " + tvShowRepository.getCount());
-        Log.d(TAG, "Количество игр в базе: " + gameRepository.getCount());
-        Log.d(TAG, "Количество книг в базе: " + bookRepository.getCount());
-        Log.d(TAG, "Количество аниме в базе: " + animeRepository.getCount());
-        Log.d(TAG, "Общее количество контента в базе: " + contentRepository.getCount());
 
         // Настройка CardStackLayoutManager
         setupCardStackView();
 
-        // Инициализация адаптера с данными, используя CardFilterIntegrator
+        // Получение рекомендованных элементов
         String userId = getCurrentUserId();
-        List<ContentItem> items = CardFilterIntegrator.getFilteredContentItems(
+        List<ContentItem> recommendedItems = CardFilterIntegratorV2.getRecommendedContentItems(
+                requireActivity().getApplication(),
                 categoryName,
                 userId,
-                movieRepository,
-                tvShowRepository,
-                gameRepository,
-                bookRepository,
-                animeRepository,
-                contentRepository,
-                preferencesRepository
+                DEFAULT_RECOMMENDATIONS_COUNT
         );
         
-        Log.d(TAG, "Создано элементов для отображения: " + items.size());
+        Log.d(TAG, "Получено рекомендаций: " + recommendedItems.size());
 
-        adapter = new CardStackAdapter(getContext(), items);
-        cardStackView.setAdapter(adapter);
+        // Проверка наличия рекомендаций
+        if (recommendedItems.isEmpty()) {
+            // Если рекомендаций нет, используем обычную фильтрацию
+            recommendedItems = CardFilterIntegratorV2.getFilteredAndRecommendedContentItems(
+                    requireActivity().getApplication(),
+                    categoryName,
+                    userId,
+                    movieRepository,
+                    tvShowRepository,
+                    gameRepository,
+                    bookRepository,
+                    animeRepository,
+                    contentRepository,
+                    preferencesRepository
+            );
+            
+            Log.d(TAG, "Использованы альтернативные рекомендации: " + recommendedItems.size());
+        }
+        
+        // Если все равно нет элементов, показываем сообщение об отсутствии карточек
+        if (recommendedItems.isEmpty()) {
+            cardStackView.setVisibility(View.GONE);
+            emptyCardsContainer.setVisibility(View.VISIBLE);
+        } else {
+            cardStackView.setVisibility(View.VISIBLE);
+            emptyCardsContainer.setVisibility(View.GONE);
+            
+            // Инициализация адаптера с рекомендованными элементами
+            adapter = new CardStackAdapter(getContext(), recommendedItems);
+            cardStackView.setAdapter(adapter);
+        }
 
         // Настройка кнопки перезагрузки
         reloadButton.setOnClickListener(v -> reloadCards());
-
+        
         // Проверяем статус применения фильтров
         checkFiltersStatus();
     }
-
+    
     /**
      * Проверяет, были ли применены какие-либо фильтры
      */
     private void checkFiltersStatus() {
         String userId = getCurrentUserId();
-        UserPreferencesEntity preferences = preferencesRepository.getByUserId(userId);
-
-        // Проверяем, есть ли какие-либо установленные фильтры
-        boolean hasActiveFilters = false;
-
-        if (preferences != null) {
-            hasActiveFilters = (preferences.getPreferredGenres() != null && !preferences.getPreferredGenres().isEmpty()) ||
-                    (preferences.getPreferredCountries() != null && !preferences.getPreferredCountries().isEmpty()) ||
-                    (preferences.getPreferredLanguages() != null && !preferences.getPreferredLanguages().isEmpty()) ||
-                    (preferences.getInterestsTags() != null && !preferences.getInterestsTags().isEmpty()) ||
-                    preferences.getMinDuration() > 0 ||
-                    preferences.getMaxDuration() < Integer.MAX_VALUE ||
-                    preferences.getMinYear() > 1900 ||
-                    preferences.getMaxYear() < 2025 ||
-                    preferences.isAdultContentEnabled();
-        }
-
-        // Обновляем UI в соответствии с статусом фильтров
-        filtersApplied = hasActiveFilters;
+        filtersApplied = ContentFilterHelper.hasActiveFilters(preferencesRepository.getByUserId(userId));
         updateFiltersIndicator();
     }
 
     /**
-     * Обновляет индикатор применения фильтров
+     * Обновляет индикатор применения фильтров и рекомендаций
      */
     private void updateFiltersIndicator() {
         if (filtersApplied) {
-            filtersAppliedIndicator.setVisibility(View.VISIBLE);
+            recommendationStatusText.setText("⭐ ИИ-РЕКОМЕНДАЦИИ + ФИЛЬТРЫ ⭐");
+            recommendationStatusText.setTextColor(Color.YELLOW);
         } else {
-            filtersAppliedIndicator.setVisibility(View.GONE);
+            recommendationStatusText.setText("⭐ ИИ-РЕКОМЕНДАЦИИ АКТИВНЫ ⭐");
+            recommendationStatusText.setTextColor(Color.GREEN);
         }
+        recommendationStatusText.setVisibility(View.VISIBLE);
+        
+        // Выводим информацию о работе рекомендательной системы в лог
+        Log.d(TAG, "Рекомендательная система активна. Фильтры " + 
+                (filtersApplied ? "применены" : "не применены"));
+        
+        // Показываем Toast сообщение для наглядности
+        Toast.makeText(getContext(), 
+                "ИИ-рекомендации активны" + (filtersApplied ? " + фильтры" : ""), 
+                Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -257,12 +302,14 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
     }
 
     /**
-     * Перезагружает карточки с применением фильтров
+     * Перезагружает карточки с применением фильтров и рекомендаций
      */
     private void reloadCardsWithFilters() {
-        // Используем новый CardFilterIntegrator для получения отфильтрованного списка
         String userId = getCurrentUserId();
-        List<ContentItem> filteredItems = CardFilterIntegrator.getFilteredContentItems(
+        
+        // Получаем отфильтрованные и рекомендованные элементы
+        List<ContentItem> filteredItems = CardFilterIntegratorV2.getFilteredAndRecommendedContentItems(
+                requireActivity().getApplication(),
                 categoryName,
                 userId,
                 movieRepository,
@@ -273,8 +320,6 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                 contentRepository,
                 preferencesRepository
         );
-        
-        Log.d(TAG, "Отфильтрованных элементов: " + filteredItems.size());
         
         // Обновляем адаптер с отфильтрованным списком
         adapter.setItems(filteredItems);
@@ -316,13 +361,26 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
     }
 
     private void reloadCards() {
-        // Если установлены фильтры, перезагружаем с их применением
+        // Обновляем предпочтения пользователя на основе его лайков
+        recommendationService.updateCurrentUserPreferences(requireContext());
+        
+        // Запустим тестирование рекомендаций для демонстрации работы системы
+        new Thread(() -> {
+            double quality = recommendationService.testRecommendationQuality();
+            getActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(),
+                        "Качество рекомендаций: " + String.format("%.2f", quality * 100) + "%",
+                        Toast.LENGTH_LONG).show();
+            });
+        }).start();
+        
         String userId = getCurrentUserId();
+        List<ContentItem> recommendedItems;
+        
+        // Если установлены фильтры, применяем их вместе с рекомендациями
         if (filtersApplied) {
-            reloadCardsWithFilters();
-        } else {
-            // Иначе загружаем все элементы
-            List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
+            recommendedItems = CardFilterIntegratorV2.getFilteredAndRecommendedContentItems(
+                    requireActivity().getApplication(),
                     categoryName,
                     userId,
                     movieRepository,
@@ -333,12 +391,55 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                     contentRepository,
                     preferencesRepository
             );
+        } else {
+            // Иначе используем только рекомендации
+            recommendedItems = CardFilterIntegratorV2.getRecommendedContentItems(
+                    requireActivity().getApplication(),
+                    categoryName,
+                    userId,
+                    DEFAULT_RECOMMENDATIONS_COUNT
+            );
             
-            adapter.setItems(allItems);
+            // Если рекомендаций нет, используем обычную фильтрацию
+            if (recommendedItems.isEmpty()) {
+                recommendedItems = CardFilterIntegratorV2.getFilteredAndRecommendedContentItems(
+                        requireActivity().getApplication(),
+                        categoryName,
+                        userId,
+                        movieRepository,
+                        tvShowRepository,
+                        gameRepository,
+                        bookRepository,
+                        animeRepository,
+                        contentRepository,
+                        preferencesRepository
+                );
+            }
         }
-
-        cardStackView.setVisibility(View.VISIBLE);
-        emptyCardsContainer.setVisibility(View.GONE);
+        
+        // Выводим информацию о полученных рекомендациях
+        Log.d(TAG, "\n=== СИСТЕМА РЕКОМЕНДАЦИЙ ===\n" +
+                "Получено " + recommendedItems.size() + " рекомендаций\n" +
+                "Применены фильтры: " + (filtersApplied ? "ДА" : "НЕТ") + "\n" +
+                "Категория: " + categoryName + "\n" +
+                "Пользователь: " + userId + "\n" +
+                "===========================");
+        
+        // Обновляем адаптер
+        adapter.setItems(recommendedItems);
+        
+        // Обновляем видимость элементов
+        if (recommendedItems.isEmpty()) {
+            cardStackView.setVisibility(View.GONE);
+            emptyCardsContainer.setVisibility(View.VISIBLE);
+            Toast.makeText(getContext(), "Нет рекомендаций для отображения", Toast.LENGTH_SHORT).show();
+        } else {
+            cardStackView.setVisibility(View.VISIBLE);
+            emptyCardsContainer.setVisibility(View.GONE);
+            Toast.makeText(getContext(), 
+                    "Загружено " + recommendedItems.size() + " рекомендаций", 
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     // Кнопка для свайпа влево программно
@@ -390,8 +491,25 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             Log.d(TAG, "Выполнен свайп карточки: " + item.getTitle() + " (ID: " + item.getId() + ", категория: " + categoryName + ")");
 
             String userId = getCurrentUserId();
+            boolean isRightSwipe = direction == Direction.Right;
             
-            if (direction == Direction.Right) {
+            // Обрабатываем свайп в рекомендательной системе
+            CardFilterIntegratorV2.handleSwipeEvent(
+                    requireActivity().getApplication(),
+                    item.getId(),
+                    isRightSwipe
+            );
+            
+            // Выводим информативный лог о действии рекомендательной системы
+            Log.d(TAG, "\n=== СИСТЕМА РЕКОМЕНДАЦИЙ ===\n" +
+                    "Обработан свайп " + (isRightSwipe ? "ВПРАВО (ЛАЙК)" : "ВЛЕВО (ДИЗЛАЙК)") + "\n" +
+                    "ID контента: " + item.getId() + "\n" +
+                    "Название: " + item.getTitle() + "\n" +
+                    "Категория: " + categoryName + "\n" +
+                    "Данные будут использованы для уточнения рекомендаций\n" +
+                    "===========================");
+            
+            if (isRightSwipe) {
                 // Пользователю понравился элемент
                 item.setLiked(true);
                 Toast.makeText(getContext(), "Добавлено в избранное: " + item.getTitle(), Toast.LENGTH_SHORT).show();
@@ -413,7 +531,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                 
                 // Синхронизация с Firebase после добавления в избранное
                 syncWithFirebase(userId, item);
-            } else if (direction == Direction.Left) {
+            } else {
                 // Пользователю не понравился элемент
                 Toast.makeText(getContext(), "Пропущено: " + item.getTitle(), Toast.LENGTH_SHORT).show();
 
@@ -451,18 +569,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             return;
         }
         
-        // Преобразуем ContentItem в ContentEntity для синхронизации
-        ContentEntity contentEntity = new ContentEntity();
-        contentEntity.setId(item.getId());
-        contentEntity.setTitle(item.getTitle());
-        contentEntity.setCategory(item.getCategory());
-        contentEntity.setImageUrl(item.getImageUrl());
-        contentEntity.setDescription(item.getDescription());
-        contentEntity.setRating(item.getRating());
-        contentEntity.setCompleted(item.isWatched()); // Используем существующий метод isWatched
-        contentEntity.setTimestamp(System.currentTimeMillis());
-        
-        // Используем FirestoreDataManager для синхронизации
+        // Синхронизация с Firebase (код из оригинального CardStackFragment)
         FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(requireContext());
         firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
             @Override
@@ -473,8 +580,6 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             @Override
             public void onFailure(String errorMessage) {
                 Log.e(TAG, "Ошибка синхронизации с Firebase: " + errorMessage);
-                // Сохраняем флаг, что данные требуют повторной синхронизации
-                // TODO: Реализовать механизм отложенной синхронизации
             }
         });
     }

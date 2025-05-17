@@ -12,6 +12,7 @@ import com.draker.swipetime.database.entities.UserAchievementCrossRef;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 import com.draker.swipetime.utils.ActionLogger;
+import com.draker.swipetime.utils.FirestoreDataManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ public class GamificationManager {
     private final UserStatsDao userStatsDao;
     
     private static GamificationManager instance;
+    private static final String TAG = "GamificationManager";
     
     // Типы действий
     public static final String ACTION_SWIPE = "swipe";
@@ -262,6 +264,7 @@ public class GamificationManager {
         // Если достижение еще не выполнено, отмечаем его как выполненное
         if (!userAchievement.isCompleted()) {
             userAchievement.setCompleted(true);
+            userAchievement.setCompletionDate(System.currentTimeMillis());
             userAchievementDao.insert(userAchievement);
             
             // Обновляем счетчик достижений
@@ -273,6 +276,9 @@ public class GamificationManager {
                 int xp = achievement.getExperienceReward();
                 boolean levelUp = user.addExperience(xp);
                 userDao.update(user);
+                
+                // Синхронизация с Firebase, если пользователь авторизован
+                syncUserDataWithFirebase(userId);
                 
                 // Уведомляем о новом достижении
                 if (achievementListener != null) {
@@ -289,6 +295,38 @@ public class GamificationManager {
         }
         
         return 0;
+    }
+    
+    /**
+     * Синхронизирует данные пользователя с Firebase
+     * @param userId ID пользователя
+     */
+    private void syncUserDataWithFirebase(String userId) {
+        // Проверяем, что пользователь авторизован (не тестовый пользователь)
+        if (userId == null || userId.isEmpty() || userId.equals("user_1")) {
+            Log.d(TAG, "Синхронизация с Firebase пропущена: пользователь не авторизован");
+            return;
+        }
+        
+        try {
+            // Получаем экземпляр FirestoreDataManager
+            FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(context);
+            
+            // Запускаем синхронизацию
+            firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "Синхронизация с Firebase успешно выполнена");
+                }
+
+                @Override
+                public void onFailure(String errorMessage) {
+                    Log.e(TAG, "Ошибка синхронизации с Firebase: " + errorMessage);
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при синхронизации с Firebase: " + e.getMessage());
+        }
     }
     
     /**

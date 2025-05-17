@@ -105,6 +105,14 @@ public class UserRepository {
     public List<UserEntity> getAll() {
         return userDao.getAll();
     }
+    
+    /**
+     * Получить всех пользователей (альтернативное название метода)
+     * @return список всех пользователей
+     */
+    public List<UserEntity> getAllUsers() {
+        return userDao.getAll();
+    }
 
     /**
      * Наблюдать за всеми пользователями (LiveData)
