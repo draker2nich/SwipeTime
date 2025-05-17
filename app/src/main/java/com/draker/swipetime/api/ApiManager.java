@@ -151,7 +151,40 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void searchBooks(String query, int page, ApiCallback<BookEntity> callback) {
+        // Сначала пробуем с API ключом
         Disposable disposable = googleBooksRepository.searchBooks(query, page)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        books -> {
+                            if (books != null && !books.isEmpty()) {
+                                // Если успешно получили книги с ключом
+                                Log.d(TAG, "Successfully retrieved " + books.size() + " books with API key");
+                                // Сохраняем в базу данных
+                                for (BookEntity book : books) {
+                                    bookRepository.insert(book);
+                                }
+                                callback.onSuccess(books);
+                            } else {
+                                // Если не получили книги с ключом, пробуем без ключа
+                                Log.d(TAG, "No books found with API key, trying without key");
+                                trySearchBooksWithoutKey(query, page, callback);
+                            }
+                        },
+                        error -> {
+                            Log.e(TAG, "Error searching books with API key: " + error.getMessage());
+                            // В случае ошибки пробуем без ключа
+                            trySearchBooksWithoutKey(query, page, callback);
+                        }
+                );
+        disposables.add(disposable);
+    }
+    
+    /**
+     * Резервный метод поиска книг без API ключа
+     */
+    private void trySearchBooksWithoutKey(String query, int page, ApiCallback<BookEntity> callback) {
+        Disposable disposable = googleBooksRepository.searchBooksNoKey(query, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -163,7 +196,7 @@ public class ApiManager {
                             callback.onSuccess(books);
                         },
                         error -> {
-                            Log.e(TAG, "Error searching books: " + error.getMessage());
+                            Log.e(TAG, "Error searching books without API key: " + error.getMessage());
                             callback.onError(error);
                         }
                 );

@@ -36,20 +36,32 @@ public class GoogleBooksRepository {
     public Observable<List<BookEntity>> searchBooks(String query, int page) {
         int startIndex = page * ApiConstants.PAGE_SIZE;
         
-        // Если запрос пустой, ищем популярные книги
+        // Если запрос пустой, ищем популярные книги или конкретные известные книги
         if (query == null || query.isEmpty()) {
-            query = "subject:bestseller";
+            query = "Harry Potter OR The Lord of the Rings OR Game of Thrones";
         }
         
-        // Добавляем параметр для получения книг с обложками
+        android.util.Log.d("GoogleBooksApi", "Searching books with query: " + query + " and API key: AIzaSyCXClzjGf7cUiMCPPJUDy8CH4w6n4C639g");
+        
         final String finalQuery = query;
         
-        return service.searchBooks(finalQuery, ApiConstants.PAGE_SIZE, startIndex, "ru")
+        // Добавляем API key для авторизации запросов
+        return service.searchBooks(finalQuery, ApiConstants.PAGE_SIZE, startIndex, "ru", "AIzaSyCXClzjGf7cUiMCPPJUDy8CH4w6n4C639g")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertBookResponseToEntities)
+                .map(response -> {
+                    android.util.Log.d("GoogleBooksApi", "Response received: " + 
+                            (response != null ? "total items: " + response.getTotalItems() : "null response"));
+                    if (response != null && response.getItems() != null) {
+                        android.util.Log.d("GoogleBooksApi", "Items count: " + response.getItems().size());
+                    }
+                    return convertBookResponseToEntities(response);
+                })
+                .doOnError(error -> {
+                    android.util.Log.e("GoogleBooksApi", "Error searching books: " + error.getMessage(), error);
+                })
                 .onErrorReturn(error -> {
-                    Log.e(TAG, "Error searching books: " + error.getMessage(), error);
+                    android.util.Log.e("GoogleBooksApi", "Error searching books: " + error.getMessage(), error);
                     // Возвращаем пустой список в случае ошибки, чтобы не ломать поток
                     return new ArrayList<>();
                 });
@@ -61,7 +73,7 @@ public class GoogleBooksRepository {
      * @return Observable с BookEntity
      */
     public Observable<BookEntity> getBookDetails(String volumeId) {
-        return service.getBookDetails(volumeId)
+        return service.getBookDetails(volumeId, "AIzaSyCXClzjGf7cUiMCPPJUDy8CH4w6n4C639g")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .map(this::convertBookToEntity);
@@ -76,25 +88,49 @@ public class GoogleBooksRepository {
     public Observable<List<BookEntity>> getBooksByCategory(String category, int page) {
         int startIndex = page * ApiConstants.PAGE_SIZE;
         String query = "subject:" + category;
-        return service.getBooksByCategory(query, ApiConstants.PAGE_SIZE, startIndex, "ru")
+        return service.getBooksByCategory(query, ApiConstants.PAGE_SIZE, startIndex, "ru", "AIzaSyCXClzjGf7cUiMCPPJUDy8CH4w6n4C639g")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .map(this::convertBookResponseToEntities);
     }
 
     /**
-     * Получить книги по автору
-     * @param author автор
+     * Альтернативный метод поиска книг без API ключа
+     * @param query поисковый запрос
      * @param page номер страницы (начинается с 0)
      * @return Observable со списком BookEntity
      */
-    public Observable<List<BookEntity>> getBooksByAuthor(String author, int page) {
+    public Observable<List<BookEntity>> searchBooksNoKey(String query, int page) {
         int startIndex = page * ApiConstants.PAGE_SIZE;
-        String query = "inauthor:" + author;
-        return service.getBooksByAuthor(query, ApiConstants.PAGE_SIZE, startIndex, "ru")
+        
+        // Если запрос пустой, ищем популярные книги или конкретные известные книги
+        if (query == null || query.isEmpty()) {
+            query = "Harry Potter";
+        }
+        
+        android.util.Log.d("GoogleBooksApi", "Searching books without API key, query: " + query);
+        
+        final String finalQuery = query;
+        
+        return service.searchBooksNoKey(finalQuery, ApiConstants.PAGE_SIZE, startIndex)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertBookResponseToEntities);
+                .map(response -> {
+                    android.util.Log.d("GoogleBooksApi", "Response received (no key): " + 
+                            (response != null ? "total items: " + response.getTotalItems() : "null response"));
+                    if (response != null && response.getItems() != null) {
+                        android.util.Log.d("GoogleBooksApi", "Items count: " + response.getItems().size());
+                    }
+                    return convertBookResponseToEntities(response);
+                })
+                .doOnError(error -> {
+                    android.util.Log.e("GoogleBooksApi", "Error searching books (no key): " + error.getMessage(), error);
+                })
+                .onErrorReturn(error -> {
+                    android.util.Log.e("GoogleBooksApi", "Error searching books (no key): " + error.getMessage(), error);
+                    // Возвращаем пустой список в случае ошибки, чтобы не ломать поток
+                    return new ArrayList<>();
+                });
     }
 
     /**

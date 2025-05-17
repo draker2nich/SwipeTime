@@ -1,7 +1,14 @@
 package com.draker.swipetime.utils;
 
+import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CenterCrop;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.draker.swipetime.R;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -78,6 +85,24 @@ public class ImageUtil {
     }
     
     /**
+     * Определить, является ли изображение горизонтальным (для игр)
+     * @param url строка URL
+     * @return true, если это скорее всего горизонтальное изображение
+     */
+    public static boolean isLikelyHorizontalImage(String url) {
+        if (url == null) return false;
+        
+        // Для RAWG API - часто содержат скриншоты, которые горизонтальные
+        // или обложки, которые могут иметь специфический формат
+        if (url.contains("media.rawg.io")) {
+            return url.contains("screenshots") || 
+                  !url.contains("crop/600/400") && !url.contains("crop/400/600");
+        }
+        
+        return false;
+    }
+    
+    /**
      * Получить URL изображения заглушки, если оригинальный URL недействителен
      * @param originalUrl оригинальный URL или null
      * @param category категория контента
@@ -89,28 +114,63 @@ public class ImageUtil {
             return originalUrl;
         }
         
-        // URL изображений заглушек для разных категорий
+        // URL изображений заглушек для разных категорий (вертикальные постеры)
         switch (category.toLowerCase()) {
             case "фильмы":
             case "movie":
-                return "https://i.pravatar.cc/300?img=9"; // Заглушка для фильмов
+                return "https://m.media-amazon.com/images/M/MV5BMzUzNDM2NjQ5M15BMl5BanBnXkFtZTgwNTM3NTg4OTE@._V1_UX182_CR0,0,182,268_AL_.jpg";
             case "сериалы":
             case "tv_show":
-                return "https://i.pravatar.cc/300?img=10"; // Заглушка для сериалов
+                return "https://m.media-amazon.com/images/M/MV5BMjA5MTE1MjQyNV5BMl5BanBnXkFtZTgwMzI5Njc0ODE@._V1_UX182_CR0,0,182,268_AL_.jpg";
             case "игры":
             case "game":
-                return "https://i.pravatar.cc/300?img=11"; // Заглушка для игр
+                return "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg";
             case "книги":
             case "book":
-                return "https://i.pravatar.cc/300?img=12"; // Заглушка для книг
+                return "https://m.media-amazon.com/images/I/51bVNTqHFlL._SX323_BO1,204,203,200_.jpg";
             case "аниме":
             case "anime":
-                return "https://i.pravatar.cc/300?img=13"; // Заглушка для аниме
-            case "музыка":
-            case "music":
-                return "https://i.pravatar.cc/300?img=14"; // Заглушка для музыки
+                return "https://cdn.myanimelist.net/images/anime/1171/109222.jpg";
             default:
                 return "https://i.pravatar.cc/300?img=15"; // Общая заглушка
+        }
+    }
+    
+    /**
+     * Загрузить изображение в ImageView с учетом особенностей категории (карточки)
+     * @param context контекст
+     * @param imageUrl URL изображения
+     * @param imageView целевой ImageView
+     * @param category категория контента
+     */
+    public static void loadCardImage(Context context, String imageUrl, ImageView imageView, String category) {
+        // Проверяем валидность URL изображения и используем заглушки при необходимости
+        String finalImageUrl = getFallbackImageUrl(imageUrl, category);
+        
+        try {
+            // Для игр проверяем формат изображения и применяем специальную обработку
+            if ((category.equalsIgnoreCase("игры") || category.equalsIgnoreCase("game")) 
+                    && isLikelyHorizontalImage(finalImageUrl)) {
+                // Для горизонтальных изображений (скриншоты) - обрезаем до квадрата по центру
+                Glide.with(context)
+                    .load(finalImageUrl)
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.placeholder_image)
+                    .transform(new CenterCrop())
+                    .into(imageView);
+            } else {
+                // Для остальных категорий - стандартная загрузка
+                Glide.with(context)
+                    .load(finalImageUrl)
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.placeholder_image)
+                    .centerCrop()
+                    .into(imageView);
+            }
+        } catch (Exception e) {
+            // В случае ошибки показываем заглушку
+            imageView.setImageResource(R.drawable.placeholder_image);
+            Log.e(TAG, "Error loading image: " + e.getMessage());
         }
     }
 }

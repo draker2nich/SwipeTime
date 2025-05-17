@@ -13,18 +13,43 @@ import retrofit2.http.Query;
  */
 public interface GoogleBooksService {
     // Поиск книг
+    /**
+     * Поиск книг
+     * @param query поисковый запрос
+     * @param maxResults максимальное количество результатов
+     * @param startIndex начальный индекс (для пагинации)
+     * @param langRestrict ограничение по языку
+     * @param apiKey API ключ (опционально)
+     * @return
+     */
     @GET("volumes")
     Observable<GoogleBooksResponse> searchBooks(
             @Query("q") String query,
             @Query("maxResults") int maxResults,
             @Query("startIndex") int startIndex,
-            @Query("langRestrict") String langRestrict
+            @Query("langRestrict") String langRestrict,
+            @Query("key") String apiKey
+    );
+
+    /**
+     * Альтернативный метод поиска книг без API ключа
+     * @param query поисковый запрос
+     * @param maxResults максимальное количество результатов
+     * @param startIndex начальный индекс (для пагинации)
+     * @return
+     */
+    @GET("volumes")
+    Observable<GoogleBooksResponse> searchBooksNoKey(
+            @Query("q") String query,
+            @Query("maxResults") int maxResults,
+            @Query("startIndex") int startIndex
     );
 
     // Получение подробной информации о книге
     @GET("volumes/{volumeId}")
     Observable<GoogleBook> getBookDetails(
-            @Path("volumeId") String volumeId
+            @Path("volumeId") String volumeId,
+            @Query("key") String apiKey
     );
 
     // Получение книг по категории
@@ -33,7 +58,8 @@ public interface GoogleBooksService {
             @Query("q") String query,
             @Query("maxResults") int maxResults,
             @Query("startIndex") int startIndex,
-            @Query("langRestrict") String langRestrict
+            @Query("langRestrict") String langRestrict,
+            @Query("key") String apiKey
     );
 
     // Получение книг по автору
@@ -42,6 +68,7 @@ public interface GoogleBooksService {
             @Query("q") String query,
             @Query("maxResults") int maxResults,
             @Query("startIndex") int startIndex,
-            @Query("langRestrict") String langRestrict
+            @Query("langRestrict") String langRestrict,
+            @Query("key") String apiKey
     );
 }

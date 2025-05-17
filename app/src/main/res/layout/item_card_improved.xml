@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/card_background">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Изображение -->
+        <ImageView
+            android:id="@+id/card_image"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:scaleType="centerCrop"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:contentDescription="Обложка"
+            tools:src="@drawable/placeholder_image"/>
+
+        <!-- Градиент для улучшения читаемости текста -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/card_gradient"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintHeight_percent="0.6"
+            app:layout_constraintTop_toTopOf="@id/card_details_container" />
+            
+        <!-- Контейнер для деталей -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/card_details_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:paddingBottom="16dp">
+
+            <!-- Заголовок -->
+            <TextView
+                android:id="@+id/card_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                tools:text="Название карточки" />
+                
+            <!-- Подзаголовок (дополнительная информация) -->
+            <TextView
+                android:id="@+id/card_subtitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="#E6E6E6"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:maxLines="1"
+                android:ellipsize="end"
+                app:layout_constraintTop_toBottomOf="@id/card_title"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                tools:text="Жанр • Режиссёр • 2023" />
+
+            <!-- Описание -->
+            <TextView
+                android:id="@+id/card_description"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:textColor="#CCCCCC"
+                android:textSize="16sp"
+                android:maxLines="4"
+                android:ellipsize="end"
+                app:layout_constraintTop_toBottomOf="@id/card_subtitle"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                tools:text="Описание карточки с подробной информацией о содержимом. Здесь приведено краткое содержание и основные особенности." />
+                
+            <!-- Дополнительные подробности -->
+            <TextView
+                android:id="@+id/card_details"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp"
+                android:textColor="#AAAAAA"
+                android:textSize="14sp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                app:layout_constraintTop_toBottomOf="@id/card_description"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                tools:text="Оценка: 8.7/10 • Длительность: 120 мин • Популярность: высокая" />
+                
+            <!-- Рейтинг (звезды) -->
+            <RatingBar
+                android:id="@+id/card_rating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:progressTint="#FFC107"
+                android:rating="4.5"
+                android:stepSize="0.5"
+                style="?android:attr/ratingBarStyleSmall"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/card_details" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Индикатор свайпа влево (не нравится) -->
+        <ImageView
+            android:id="@+id/left_indicator"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_dislike"
+            android:alpha="0"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_margin="24dp"
+            android:contentDescription="Не нравится" />
+
+        <!-- Индикатор свайпа вправо (нравится) -->
+        <ImageView
+            android:id="@+id/right_indicator"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_like"
+            android:alpha="0"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_margin="24dp"
+            android:contentDescription="Нравится" />
+            
+        <!-- Категория (бейдж) -->
+        <TextView
+            android:id="@+id/card_category_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/category_badge_background"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:layout_margin="16dp"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="ФИЛЬМ" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

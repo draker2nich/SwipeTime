@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.draker.swipetime.R;
 import com.draker.swipetime.models.ContentItem;
+import com.draker.swipetime.utils.ImageUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     @Override
     public CardViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_card, parent, false);
+                .inflate(R.layout.item_card_improved, parent, false);
         return new CardViewHolder(view);
     }
 
@@ -41,25 +42,72 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
         holder.title.setText(item.getTitle());
         holder.description.setText(item.getDescription());
         
+        // Заполняем дополнительную информацию
+        // Подзаголовок: для фильмов и сериалов - жанр и год, для книг - автор, для игр - разработчик, для аниме - студия
+        String subtitle = "";
+        String details = "";
+        float rating = 0f;
+        
+        switch (item.getCategory().toLowerCase()) {
+            case "фильмы":
+                subtitle = item.getGenre() + (item.getYear() > 0 ? " • " + item.getYear() : "");
+                details = "Режиссёр: " + (item.getDirector() != null && !item.getDirector().isEmpty() ? item.getDirector() : "Неизвестен");
+                rating = item.getRating();
+                holder.categoryBadge.setText("ФИЛЬМ");
+                holder.categoryBadge.setBackgroundResource(R.color.movieColor);
+                break;
+            case "сериалы":
+                subtitle = item.getGenre() + (item.getYear() > 0 ? " • " + item.getYear() : "");
+                details = "Сезонов: " + (item.getSeasons() > 0 ? item.getSeasons() : "N/A") + 
+                          " • Эпизодов: " + (item.getEpisodes() > 0 ? item.getEpisodes() : "N/A");
+                rating = item.getRating();
+                holder.categoryBadge.setText("СЕРИАЛ");
+                holder.categoryBadge.setBackgroundResource(R.color.tvShowColor);
+                break;
+            case "игры":
+                subtitle = item.getGenre() + (item.getYear() > 0 ? " • " + item.getYear() : "");
+                details = "Разработчик: " + (item.getDeveloper() != null && !item.getDeveloper().isEmpty() ? item.getDeveloper() : "Неизвестен") +
+                          " • Платформы: " + (item.getPlatforms() != null && !item.getPlatforms().isEmpty() ? item.getPlatforms() : "Разные");
+                rating = item.getRating();
+                holder.categoryBadge.setText("ИГРА");
+                holder.categoryBadge.setBackgroundResource(R.color.gameColor);
+                break;
+            case "книги":
+                subtitle = (item.getAuthor() != null && !item.getAuthor().isEmpty() ? item.getAuthor() : "Неизвестный автор");
+                details = "Издательство: " + (item.getPublisher() != null && !item.getPublisher().isEmpty() ? item.getPublisher() : "Неизвестно") +
+                          (item.getYear() > 0 ? " • " + item.getYear() : "") +
+                          (item.getPages() > 0 ? " • " + item.getPages() + " стр." : "");
+                rating = item.getRating();
+                holder.categoryBadge.setText("КНИГА");
+                holder.categoryBadge.setBackgroundResource(R.color.bookColor);
+                break;
+            case "аниме":
+                subtitle = item.getGenre() + (item.getYear() > 0 ? " • " + item.getYear() : "");
+                details = "Студия: " + (item.getStudio() != null && !item.getStudio().isEmpty() ? item.getStudio() : "Неизвестна") +
+                          " • Эпизодов: " + (item.getEpisodes() > 0 ? item.getEpisodes() : "N/A");
+                rating = item.getRating();
+                holder.categoryBadge.setText("АНИМЕ");
+                holder.categoryBadge.setBackgroundResource(R.color.animeColor);
+                break;
+            default:
+                subtitle = item.getGenre() + (item.getYear() > 0 ? " • " + item.getYear() : "");
+                holder.categoryBadge.setText("КОНТЕНТ");
+                holder.categoryBadge.setBackgroundResource(R.color.defaultColor);
+                break;
+        }
+        
+        holder.subtitle.setText(subtitle);
+        holder.details.setText(details);
+        holder.rating.setRating(rating / 2); // Преобразуем рейтинг в 5-звездочную шкалу
+        
         // Проверяем валидность URL изображения и используем заглушки при необходимости
         String imageUrl = com.draker.swipetime.utils.ImageUtil.getFallbackImageUrl(
                 item.getImageUrl(), 
                 item.getCategory()
         );
         
-        // Загрузка изображения с помощью Glide
-        try {
-            com.bumptech.glide.Glide.with(context)
-                .load(imageUrl)
-                .placeholder(R.drawable.placeholder_image)
-                .error(R.drawable.placeholder_image)
-                .centerCrop()
-                .into(holder.image);
-        } catch (Exception e) {
-            // В случае ошибки показываем заглушку
-            holder.image.setImageResource(R.drawable.placeholder_image);
-            Log.e("CardStackAdapter", "Error loading image: " + e.getMessage());
-        }
+        // Загрузка изображения с помощью нашей улучшенной утилиты
+        ImageUtil.loadCardImage(context, imageUrl, holder.image, item.getCategory());
         
         // Скрываем индикаторы свайпа в начальном состоянии
         holder.leftIndicator.setAlpha(0f);
@@ -114,7 +162,11 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     static class CardViewHolder extends RecyclerView.ViewHolder {
         ImageView image;
         TextView title;
+        TextView subtitle;
         TextView description;
+        TextView details;
+        android.widget.RatingBar rating;
+        TextView categoryBadge;
         ImageView leftIndicator;
         ImageView rightIndicator;
 
@@ -122,7 +174,11 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
             super(itemView);
             image = itemView.findViewById(R.id.card_image);
             title = itemView.findViewById(R.id.card_title);
+            subtitle = itemView.findViewById(R.id.card_subtitle);
             description = itemView.findViewById(R.id.card_description);
+            details = itemView.findViewById(R.id.card_details);
+            rating = itemView.findViewById(R.id.card_rating);
+            categoryBadge = itemView.findViewById(R.id.card_category_badge);
             leftIndicator = itemView.findViewById(R.id.left_indicator);
             rightIndicator = itemView.findViewById(R.id.right_indicator);
         }

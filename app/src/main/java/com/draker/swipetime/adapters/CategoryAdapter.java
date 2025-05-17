@@ -43,6 +43,43 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         holder.categoryName.setText(category.getName());
         holder.categoryIcon.setImageResource(category.getIconResId());
         
+        // Настройка цвета иконки в зависимости от категории
+        int colorResId;
+        int itemCount = 0;
+        
+        switch(category.getName()) {
+            case "Фильмы":
+                colorResId = R.color.movieColor;
+                itemCount = 120; // Примерные значения, в реальном приложении должно быть из репозитория
+                break;
+            case "Сериалы":
+                colorResId = R.color.tvShowColor;
+                itemCount = 85;
+                break;
+            case "Игры":
+                colorResId = R.color.gameColor;
+                itemCount = 70;
+                break;
+            case "Книги":
+                colorResId = R.color.bookColor;
+                itemCount = 95;
+                break;
+            case "Аниме":
+                colorResId = R.color.animeColor;
+                itemCount = 60;
+                break;
+            default:
+                colorResId = R.color.defaultColor;
+                itemCount = 50;
+                break;
+        }
+        
+        // Устанавливаем цвет иконки
+        holder.categoryIcon.setColorFilter(context.getResources().getColor(colorResId, null));
+        
+        // Устанавливаем количество элементов
+        holder.categoryCount.setText(itemCount + " элементов");
+        
         holder.itemView.setOnClickListener(v -> {
             // Вызов метода в слушателе при клике на категорию
             if (listener != null) {
@@ -60,11 +97,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
     static class CategoryViewHolder extends RecyclerView.ViewHolder {
         ImageView categoryIcon;
         TextView categoryName;
+        TextView categoryCount;
 
         public CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
             categoryIcon = itemView.findViewById(R.id.category_icon);
             categoryName = itemView.findViewById(R.id.category_name);
+            categoryCount = itemView.findViewById(R.id.category_count);
         }
     }
 }

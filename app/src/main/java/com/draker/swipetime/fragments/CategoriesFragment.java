@@ -51,7 +51,6 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
         categories.add(new Category("Игры", R.drawable.ic_category_games));
         categories.add(new Category("Книги", R.drawable.ic_category_books));
         categories.add(new Category("Аниме", R.drawable.ic_category_anime));
-        categories.add(new Category("Музыка", R.drawable.ic_category_music));
         
         return categories;
     }
