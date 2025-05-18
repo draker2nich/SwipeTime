@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.draker.swipetime.R;
 import com.draker.swipetime.adapters.CategoryAdapter;
 import com.draker.swipetime.models.Category;
+import com.draker.swipetime.utils.FragmentMigrationHelper;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,8 +59,20 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
     
     @Override
     public void onCategoryClick(Category category) {
-        // Переход к фрагменту с карточками при клике на категорию
-        CardStackFragment cardStackFragment = CardStackFragment.newInstance(category.getName());
+        // Проверяем, какой режим фрагментов используется
+        boolean useInfiniteFragments = FragmentMigrationHelper.shouldUseInfiniteFragments(requireContext());
+        
+        // Создаем соответствующий фрагмент
+        Fragment cardStackFragment;
+        if (useInfiniteFragments) {
+            // Используем новый фрагмент с бесконечной лентой
+            cardStackFragment = InfiniteCardStackFragment.newInstance(category.getName());
+            Toast.makeText(getContext(), "Используется бесконечная лента", Toast.LENGTH_SHORT).show();
+        } else {
+            // Используем старый фрагмент для совместимости
+            cardStackFragment = CardStackFragment.newInstance(category.getName());
+        }
+        
         getParentFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, cardStackFragment)
                 .addToBackStack(null)

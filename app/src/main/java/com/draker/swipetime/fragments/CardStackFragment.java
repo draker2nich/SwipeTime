@@ -56,6 +56,7 @@ import com.yuyakaido.android.cardstackview.SwipeAnimationSetting;
 import com.yuyakaido.android.cardstackview.SwipeableMethod;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -468,8 +469,51 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             
             Log.d(TAG, "Новых уникальных элементов: " + newItems.size());
             
-            if (!newItems.isEmpty()) {
+            // Если новых элементов мало, применяем стратегию повторного использования
+            if (newItems.size() < 10) {
+                Log.d(TAG, "Недостаточно новых элементов, применяем стратегию повторного использования");
+                
+                // Сбрасываем историю показанных элементов
+                com.draker.swipetime.utils.ContentShuffler.resetAllHistory();
+                
+                // Получаем все элементы заново
+                List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
+                        categoryName,
+                        userId,
+                        movieRepository,
+                        tvShowRepository,
+                        gameRepository,
+                        bookRepository,
+                        animeRepository,
+                        contentRepository,
+                        preferencesRepository
+                );
+                
+                // Оптимизация: сохраняем текущие элементы первыми, чтобы их не видно было сразу
+                List<ContentItem> remainingItems = new ArrayList<>();
+                
+                for (ContentItem item : allItems) {
+                    if (!currentIds.contains(item.getId())) {
+                        remainingItems.add(item);
+                    }
+                }
+                
                 // Перемешиваем новые элементы
+                Collections.shuffle(remainingItems);
+                
+                // Если и это не помогло - создаем "синтетические" карточки
+                if (remainingItems.size() < 5) {
+                    Log.d(TAG, "Создаем синтетические карточки для продолжения опыта");
+                    remainingItems.addAll(createSyntheticCards(10));
+                }
+                
+                // Обновляем адаптер
+                adapter.addItems(remainingItems);
+                
+                // Отображаем сообщение
+                Toast.makeText(getContext(), "Загружены новые рекомендации", Toast.LENGTH_SHORT).show();
+            } else {
+                // Если достаточно новых элементов, просто перемешиваем и добавляем их
                 List<ContentItem> shuffledNewItems = com.draker.swipetime.utils.ContentShuffler.shuffleContent(newItems, categoryName);
                 
                 // Добавляем новые элементы в адаптер
@@ -477,19 +521,132 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                 
                 // Отображаем сообщение
                 Toast.makeText(getContext(), "Добавлено " + shuffledNewItems.size() + " новых элементов", Toast.LENGTH_SHORT).show();
-                
-                // Показываем карточки, если они были скрыты
-                if (cardStackView.getVisibility() != View.VISIBLE) {
-                    cardStackView.setVisibility(View.VISIBLE);
-                    emptyCardsContainer.setVisibility(View.GONE);
-                }
-            } else {
-                // Если нет новых элементов, отображаем сообщение
-                Toast.makeText(getContext(), "Нет новых элементов для отображения", Toast.LENGTH_SHORT).show();
+            }
+            
+            // Показываем карточки, если они были скрыты
+            if (cardStackView.getVisibility() != View.VISIBLE) {
+                cardStackView.setVisibility(View.VISIBLE);
+                emptyCardsContainer.setVisibility(View.GONE);
             }
             
             isLoading = false;
         });
+    }
+    
+    /**
+     * Создает синтетические карточки на основе уже существующих
+     * @param count количество карточек
+     * @return список синтетических карточек
+     */
+    private List<ContentItem> createSyntheticCards(int count) {
+        List<ContentItem> syntheticCards = new ArrayList<>();
+        
+        // Получаем все существующие карточки этой категории
+        List<ContentItem> allExistingItems = new ArrayList<>();
+        
+        switch (categoryName.toLowerCase()) {
+            case "фильмы":
+                for (MovieEntity entity : movieRepository.getAll()) {
+                    allExistingItems.add(convertEntityToContentItem(entity));
+                }
+                break;
+            case "сериалы":
+                for (TVShowEntity entity : tvShowRepository.getAll()) {
+                    allExistingItems.add(convertEntityToContentItem(entity));
+                }
+                break;
+            case "игры":
+                for (GameEntity entity : gameRepository.getAll()) {
+                    allExistingItems.add(convertEntityToContentItem(entity));
+                }
+                break;
+            case "книги":
+                for (BookEntity entity : bookRepository.getAll()) {
+                    allExistingItems.add(convertEntityToContentItem(entity));
+                }
+                break;
+            case "аниме":
+                for (AnimeEntity entity : animeRepository.getAll()) {
+                    allExistingItems.add(convertEntityToContentItem(entity));
+                }
+                break;
+            default:
+                for (ContentEntity entity : contentRepository.getByCategory(categoryName)) {
+                    allExistingItems.add(convertEntityToContentItem(entity));
+                }
+                break;
+        }
+        
+        // Если у нас нет исходных данных, создадим шаблонные карточки
+        if (allExistingItems.isEmpty()) {
+            for (int i = 0; i < count; i++) {
+                ContentItem item = new ContentItem(
+                        "synthetic_" + System.currentTimeMillis() + "_" + i,
+                        "Рекомендация #" + (i + 1),
+                        "Эта рекомендация создана специально для вас на основе ваших предпочтений.",
+                        null, // без изображения
+                        categoryName
+                );
+                syntheticCards.add(item);
+            }
+            return syntheticCards;
+        }
+        
+        // Перемешиваем существующие элементы
+        Collections.shuffle(allExistingItems);
+        
+        // Создадим "смешанные" элементы
+        for (int i = 0; i < count && i < allExistingItems.size(); i++) {
+            ContentItem sourceItem = allExistingItems.get(i);
+            
+            // Генерируем новый ID
+            String newId = "synthetic_" + System.currentTimeMillis() + "_" + i;
+            
+            // Создаем новый элемент с измененными данными
+            ContentItem syntheticItem = new ContentItem(
+                    newId,
+                    "Рекомендация: " + sourceItem.getTitle(),
+                    "На основе ваших предпочтений мы подобрали эту рекомендацию. " + 
+                    sourceItem.getDescription(),
+                    sourceItem.getImageUrl(),
+                    categoryName
+            );
+            
+            // Копируем детали
+            if (sourceItem.getGenre() != null) {
+                syntheticItem.setGenre(sourceItem.getGenre());
+            }
+            
+            if (sourceItem.getYear() > 0) {
+                syntheticItem.setYear(sourceItem.getYear());
+            }
+            
+            // Добавляем в результат
+            syntheticCards.add(syntheticItem);
+        }
+        
+        return syntheticCards;
+    }
+    
+    /**
+     * Конвертирует сущность в ContentItem
+     * @param entity сущность
+     * @return элемент контента
+     */
+    private ContentItem convertEntityToContentItem(ContentEntity entity) {
+        ContentItem item = new ContentItem(
+                entity.getId(),
+                entity.getTitle(),
+                entity.getDescription(),
+                entity.getImageUrl(),
+                entity.getCategory()
+        );
+        
+        item.setLiked(entity.isLiked());
+        item.setWatched(entity.isWatched());
+        item.setRating(entity.getRating());
+        
+        return item;
     }
 
     // Кнопка для свайпа влево программно

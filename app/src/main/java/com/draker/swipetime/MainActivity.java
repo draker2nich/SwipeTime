@@ -8,7 +8,9 @@ import com.draker.swipetime.fragments.AuthProfileFragment;
 import com.draker.swipetime.fragments.CategoriesFragment;
 import com.draker.swipetime.fragments.LikedContentFragment;
 import com.draker.swipetime.database.DbCleanerUtil;
+import com.draker.swipetime.utils.FragmentMigrationHelper;
 import com.draker.swipetime.utils.GamificationIntegrator;
+import com.draker.swipetime.utils.InfiniteContentManager;
 import com.draker.swipetime.utils.NetworkHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -30,6 +32,12 @@ public class MainActivity extends AppCompatActivity {
         
         // Инициализация мониторинга сети
         networkHelper = NetworkHelper.getInstance(this);
+        
+        // Устанавливаем использование бесконечных фрагментов по умолчанию
+        FragmentMigrationHelper.setUseInfiniteFragments(this, true);
+        
+        // Предварительно инициализируем менеджер бесконечного контента
+        InfiniteContentManager.getInstance();
 
         // Инициализация BottomNavigationView
         bottomNavigationView = findViewById(R.id.bottom_navigation);
