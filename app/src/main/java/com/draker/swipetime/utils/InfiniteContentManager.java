@@ -11,16 +11,13 @@ import com.draker.swipetime.database.entities.ContentEntity;
 import com.draker.swipetime.database.entities.GameEntity;
 import com.draker.swipetime.database.entities.MovieEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
-import com.draker.swipetime.database.entities.UserPreferencesEntity;
 import com.draker.swipetime.models.ContentItem;
-import com.draker.swipetime.utils.EntityMapper;
 import com.draker.swipetime.repository.AnimeRepository;
 import com.draker.swipetime.repository.BookRepository;
 import com.draker.swipetime.repository.ContentRepository;
 import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
-import com.draker.swipetime.repository.UserPreferencesRepository;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Менеджер для создания бесконечного контента без повторений
+ * с поддержкой хранения истории между запусками
  */
 public class InfiniteContentManager {
     private static final String TAG = "InfiniteContentManager";
@@ -43,20 +41,17 @@ public class InfiniteContentManager {
     // Кэш для хранения доступного контента по категориям
     private final Map<String, List<ContentItem>> contentCache = new ConcurrentHashMap<>();
     
-    // История показанных элементов (чтобы избежать повторений в ближайшее время)
-    private final Map<String, Set<String>> recentlyShownItems = new ConcurrentHashMap<>();
-    
     // Флаги для отслеживания загрузки для каждой категории
     private final Map<String, AtomicBoolean> isLoadingMap = new ConcurrentHashMap<>();
-    
-    // Максимальный размер истории показанных элементов (чтобы избежать утечки памяти)
-    private static final int MAX_HISTORY_SIZE = 500;
     
     // Минимальное количество элементов в кэше перед запросом новых
     private static final int MIN_CACHE_THRESHOLD = 10;
     
     // Случайный генератор для более естественного перемешивания
     private final Random random = new Random();
+    
+    // Менеджер для постоянного хранения истории просмотров
+    private PersistentViewedHistoryManager historyManager;
     
     /**
      * Получить экземпляр менеджера бесконечного контента
@@ -75,9 +70,11 @@ public class InfiniteContentManager {
         // Инициализация кэшей и истории
         for (String category : new String[]{"Фильмы", "Сериалы", "Игры", "Книги", "Аниме"}) {
             contentCache.put(category, Collections.synchronizedList(new ArrayList<>()));
-            recentlyShownItems.put(category, Collections.synchronizedSet(new HashSet<>()));
             isLoadingMap.put(category, new AtomicBoolean(false));
         }
+        
+        // Получаем менеджер истории
+        historyManager = PersistentViewedHistoryManager.getInstance();
     }
     
     /**
@@ -96,7 +93,7 @@ public class InfiniteContentManager {
         
         if (categoryCache != null && categoryCache.size() >= count) {
             // Если в кэше достаточно элементов, возвращаем их
-            List<ContentItem> batch = extractBatch(category, count);
+            List<ContentItem> batch = extractBatch(category, count, context);
             callback.onContentLoaded(batch);
             
             // Проверяем, не пора ли загрузить еще данные
@@ -107,11 +104,11 @@ public class InfiniteContentManager {
             // Если в кэше недостаточно элементов, загружаем новые данные
             loadMoreContent(category, context, () -> {
                 // После загрузки возвращаем доступные элементы
-                List<ContentItem> batch = extractBatch(category, count);
+                List<ContentItem> batch = extractBatch(category, count, context);
                 
                 // Если элементов все равно нет, создаем синтетические
                 if (batch.isEmpty()) {
-                    batch = createSyntheticItems(category, count);
+                    batch = createDiverseSyntheticItems(category, count);
                 }
                 
                 callback.onContentLoaded(batch);
@@ -120,12 +117,13 @@ public class InfiniteContentManager {
     }
     
     /**
-     * Извлекает партию элементов из кэша для отображения
+     * Извлекает партию элементов из кэша для отображения и сохраняет их в историю
      * @param category категория контента
      * @param count количество элементов
+     * @param context контекст приложения
      * @return список элементов для отображения
      */
-    private synchronized List<ContentItem> extractBatch(String category, int count) {
+    private synchronized List<ContentItem> extractBatch(String category, int count, Context context) {
         List<ContentItem> categoryCache = contentCache.get(category);
         if (categoryCache == null || categoryCache.isEmpty()) {
             return new ArrayList<>();
@@ -138,48 +136,12 @@ public class InfiniteContentManager {
             ContentItem item = categoryCache.remove(0);
             result.add(item);
             
-            // Добавляем в историю показанных элементов
-            addToRecentlyShown(category, item.getId());
+            // Добавляем в постоянную историю показанных элементов
+            // Рейтинг 0 означает, что элемент пока только показан, но не оценен
+            historyManager.addToViewedHistory(context, category, item.getId(), false);
         }
         
         return result;
-    }
-    
-    /**
-     * Добавляет элемент в историю недавно показанных
-     * @param category категория контента
-     * @param itemId ID элемента
-     */
-    private synchronized void addToRecentlyShown(String category, String itemId) {
-        Set<String> history = recentlyShownItems.get(category);
-        if (history == null) {
-            history = Collections.synchronizedSet(new HashSet<>());
-            recentlyShownItems.put(category, history);
-        }
-        
-        // Добавляем элемент в историю
-        history.add(itemId);
-        
-        // Если история слишком большая, удаляем старые элементы
-        if (history.size() > MAX_HISTORY_SIZE) {
-            // Удаляем 20% старых элементов
-            int toRemove = MAX_HISTORY_SIZE / 5;
-            List<String> historyList = new ArrayList<>(history);
-            for (int i = 0; i < toRemove && i < historyList.size(); i++) {
-                history.remove(historyList.get(i));
-            }
-        }
-    }
-    
-    /**
-     * Проверяет, был ли элемент недавно показан
-     * @param category категория контента
-     * @param itemId ID элемента
-     * @return true, если элемент недавно показывался
-     */
-    private boolean wasRecentlyShown(String category, String itemId) {
-        Set<String> history = recentlyShownItems.get(category);
-        return history != null && history.contains(itemId);
     }
     
     /**
@@ -219,8 +181,8 @@ public class InfiniteContentManager {
         Application app = (Application) context.getApplicationContext();
         ApiIntegrationManager apiManager = ApiIntegrationManager.getInstance(app);
         
-        // Запускаем загрузку данных
-        apiManager.refreshCategoryContent(category, 20, new ApiIntegrationManager.ApiInitCallback() {
+        // Запускаем загрузку данных с расширенными параметрами для большего разнообразия
+        apiManager.refreshCategoryContent(category, 30, new ApiIntegrationManager.ApiInitCallback() {
             @Override
             public void onComplete(boolean success) {
                 if (success) {
@@ -327,11 +289,33 @@ public class InfiniteContentManager {
                 break;
         }
         
-        // Конвертируем сущности в ContentItem и фильтруем только новые (не показанные недавно)
+        // Получаем все просмотренные элементы
+        Set<String> viewedItems = historyManager.getAllViewedItems(context, category);
+        
+        // Конвертируем сущности в ContentItem и фильтруем только новые (не показанные ранее)
         for (ContentEntity entity : entities) {
-            if (!wasRecentlyShown(category, entity.getId())) {
+            if (!viewedItems.contains(entity.getId())) {
                 ContentItem item = EntityMapper.mapToContentItem(entity);
                 newItems.add(item);
+            }
+        }
+        
+        // Если после фильтрации не осталось элементов, сбрасываем историю просмотров
+        // и позволяем пользователю увидеть повторно весь контент
+        if (newItems.isEmpty() && !entities.isEmpty()) {
+            Log.d(TAG, "Все элементы категории " + category + " уже были показаны. Сбрасываем историю.");
+            
+            // Мы сбрасываем только элементы, которые не понравились пользователю
+            Set<String> likedItems = historyManager.getLikedItems(context, category);
+            historyManager.clearHistory(context, category);
+            
+            // Преобразуем элементы заново, но теперь без учета истории
+            for (ContentEntity entity : entities) {
+                // Пропускаем элементы, которые пользователю понравились, чтобы не показывать их снова
+                if (!likedItems.contains(entity.getId())) {
+                    ContentItem item = EntityMapper.mapToContentItem(entity);
+                    newItems.add(item);
+                }
             }
         }
         
@@ -353,7 +337,7 @@ public class InfiniteContentManager {
      * @param count количество элементов
      * @return список синтетических элементов
      */
-    private List<ContentItem> createSyntheticItems(String category, int count) {
+    private List<ContentItem> createDiverseSyntheticItems(String category, int count) {
         Log.d(TAG, "Создание " + count + " синтетических элементов для категории " + category);
         
         List<ContentItem> syntheticItems = new ArrayList<>();
@@ -362,31 +346,56 @@ public class InfiniteContentManager {
         String[] movieTitles = {
                 "Неизведанные миры", "Последний рубеж", "Тайна прошлого", "В поисках истины",
                 "Непокоренная вершина", "Следы времени", "Навстречу судьбе", "Тени прошлого",
-                "За горизонтом", "Сердце океана", "Путь домой", "Звездный путь"
+                "За горизонтом", "Сердце океана", "Путь домой", "Звездный путь",
+                "Бесконечность", "Эхо галактики", "Тихий шепот", "Хроники забытых",
+                "Лунный свет", "Красный закат", "Утренняя звезда", "Город призраков",
+                "Последняя надежда", "Чужие берега", "Потерянный рай", "Новый рассвет",
+                "Лабиринт судьбы", "Хранители времени", "Темный лес", "Ледяное сердце",
+                "Огненная буря", "Стальной клинок", "Золотой век", "Серебряные крылья"
         };
         
         String[] tvShowTitles = {
                 "Хроники города", "Семейные тайны", "Запретная зона", "Мистические истории",
                 "На краю вселенной", "Параллельные миры", "Следствие ведут", "Тайный агент",
-                "Городские легенды", "Секретные материалы", "Жизнь с нуля", "Поворот судьбы"
+                "Городские легенды", "Секретные материалы", "Жизнь с нуля", "Поворот судьбы",
+                "Темная сторона", "Сияние звезд", "Наследие предков", "Закон и порядок",
+                "Больница надежды", "Школа выживания", "Дневники вампира", "Мир дикого запада",
+                "Пространство и время", "Кухня шеф-повара", "Игра престолов", "Ходячие мертвецы",
+                "Корона империи", "Миллионы секретов", "Побег из тюрьмы", "В мире животных",
+                "Прошлое и будущее", "Детективное агентство", "Космические путешествия"
         };
         
         String[] gameTitles = {
                 "Королевство теней", "Последний герой", "Эпоха легенд", "Темная империя",
                 "Хроники подземелья", "Галактический фронтир", "Путь воина", "Осада крепости",
-                "Стальное сердце", "Магический кристалл", "Наследие предков", "Портал времени"
+                "Стальное сердце", "Магический кристалл", "Наследие предков", "Портал времени",
+                "Мир драконов", "Зов битвы", "Симфония хаоса", "Призраки прошлого",
+                "Долина титанов", "Кровавый рассвет", "Охота на монстров", "Стражи вселенной",
+                "Армия тьмы", "Пираты семи морей", "Империя роботов", "Волшебный клинок",
+                "Мастер меча", "Тайны древних", "Песнь льда и пламени", "Гонки будущего",
+                "Небесный замок", "Подземные лабиринты", "Космические пираты"
         };
         
         String[] bookTitles = {
                 "Тайны времени", "Последний свиток", "Забытая легенда", "Хранители знаний",
                 "Потерянная страница", "Древний манускрипт", "Путешествие души", "Тени прошлого",
-                "За пределами разума", "Наследие веков", "Врата познания", "Книга судеб"
+                "За пределами разума", "Наследие веков", "Врата познания", "Книга судеб",
+                "Шепот звезд", "Кодекс чародея", "Тайная доктрина", "Хроники династии",
+                "Сумерки богов", "Дневник путешественника", "Остров забвения", "Дочь океана",
+                "Сын лесного короля", "Академия магии", "Проклятие фараона", "Вечный странник",
+                "Семь королевств", "Империя драконов", "Алхимик судьбы", "Кровь и золото",
+                "Небесный пророк", "Сказания старого мира", "Песни серебряного века"
         };
         
         String[] animeTitles = {
                 "Дух воина", "Школа магии", "Космические странники", "Тайны древнего клана",
                 "Меч бессмертного", "Академия героев", "Призрачный мир", "Хроники аниме",
-                "Легенда о мече", "Последний самурай", "Путь ниндзя", "Небесные стражи"
+                "Легенда о мече", "Последний самурай", "Путь ниндзя", "Небесные стражи",
+                "Повелитель стихий", "Охотник на демонов", "Врата судьбы", "Рыцари звездного света",
+                "Алхимическое братство", "Город грехов", "Эльфийская песнь", "Кровавый пакт",
+                "Атака титанов", "Синий экзорцист", "Волейбольный клуб", "Человек-дьявол",
+                "Токийский гуль", "Судьба/Ночь", "Черный клевер", "Семь смертных грехов",
+                "Пираты черной лагуны", "Фантомная кровь", "Серебряная лига"
         };
         
         String[] descriptions = {
@@ -395,7 +404,12 @@ public class InfiniteContentManager {
                 "Захватывающее приключение с неожиданными поворотами сюжета и яркими персонажами.",
                 "История о преодолении трудностей и поиске внутренней силы в самых сложных ситуациях.",
                 "Эмоциональное повествование о дружбе, предательстве и искуплении.",
-                "Необычный взгляд на обычные вещи, заставляющий задуматься о смысле жизни."
+                "Необычный взгляд на обычные вещи, заставляющий задуматься о смысле жизни.",
+                "Эпическая сага о героях и злодеях, о борьбе добра и зла в фантастической вселенной.",
+                "Тонкая психологическая драма о внутренних демонах и личном преображении.",
+                "Динамичное повествование с запутанным сюжетом и неожиданной развязкой.",
+                "Мистическая история о потусторонних силах и их влиянии на обычных людей.",
+                "Захватывающий рассказ о выживании в экстремальных условиях и силе человеческого духа."
         };
         
         // Выбираем массив заголовков в зависимости от категории
@@ -424,7 +438,7 @@ public class InfiniteContentManager {
         // Генерируем синтетические элементы
         for (int i = 0; i < count; i++) {
             // Выбираем случайный заголовок и описание
-            String title = titles[random.nextInt(titles.length)] + " " + (random.nextInt(5) + 1);
+            String title = titles[random.nextInt(titles.length)] + " " + (random.nextInt(20) + 1);
             String description = descriptions[random.nextInt(descriptions.length)];
             
             // Создаем уникальный ID
@@ -479,6 +493,17 @@ public class InfiniteContentManager {
     }
     
     /**
+     * Отмечает элемент как понравившийся или не понравившийся
+     * @param context контекст приложения
+     * @param category категория контента
+     * @param itemId ID элемента
+     * @param isLiked true, если элемент понравился, false если нет
+     */
+    public void markContentRated(Context context, String category, String itemId, boolean isLiked) {
+        historyManager.addToViewedHistory(context, category, itemId, isLiked);
+    }
+    
+    /**
      * Сбрасывает кэш для указанной категории
      * @param category категория контента
      */
@@ -488,13 +513,7 @@ public class InfiniteContentManager {
             cache.clear();
         }
         
-        // Также можно сбросить историю показанных элементов
-        Set<String> history = recentlyShownItems.get(category);
-        if (history != null) {
-            history.clear();
-        }
-        
-        Log.d(TAG, "Кэш и история показов сброшены для категории: " + category);
+        Log.d(TAG, "Кэш сброшен для категории: " + category);
     }
     
     /**
@@ -505,13 +524,25 @@ public class InfiniteContentManager {
             resetCache(category);
         }
         
-        Log.d(TAG, "Все кэши и истории показов сброшены");
+        Log.d(TAG, "Все кэши сброшены");
     }
     
     /**
-     * Интерфейс для получения результата загрузки контента
+     * Сбрасывает историю просмотров для категории
+     * @param context контекст приложения
+     * @param category категория контента
      */
-    public interface ContentCallback {
-        void onContentLoaded(List<ContentItem> items);
+    public void resetHistory(Context context, String category) {
+        historyManager.clearHistory(context, category);
+        Log.d(TAG, "История просмотров сброшена для категории: " + category);
+    }
+    
+    /**
+     * Сбрасывает всю историю просмотров
+     * @param context контекст приложения
+     */
+    public void resetAllHistory(Context context) {
+        historyManager.clearAllHistory(context);
+        Log.d(TAG, "Вся история просмотров сброшена");
     }
 }

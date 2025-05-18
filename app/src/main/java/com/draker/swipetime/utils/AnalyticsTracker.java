@@ -8,178 +8,209 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Класс для отслеживания аналитики использования приложения
+ * Класс для отслеживания аналитики в приложении
  */
 public class AnalyticsTracker {
     private static final String TAG = "AnalyticsTracker";
     private static final String PREFS_NAME = "analytics_prefs";
     
-    // Ключи для метрик
-    private static final String KEY_SWIPE_COUNT = "swipe_count";
-    private static final String KEY_CARD_VIEW_COUNT = "card_view_count";
-    private static final String KEY_CONTENT_LOAD_COUNT = "content_load_count";
-    private static final String KEY_EMPTY_STATE_COUNT = "empty_state_count";
-    private static final String KEY_FRAGMENT_SWITCH_COUNT = "fragment_switch_count";
+    // Ключи для событий
+    private static final String KEY_SWIPES_RIGHT = "swipes_right_";
+    private static final String KEY_SWIPES_LEFT = "swipes_left_";
+    private static final String KEY_CONTENT_LOADED = "content_loaded_";
+    private static final String KEY_CONTENT_VIEWS = "content_views_";
+    private static final String KEY_CONTENT_LOAD_ERRORS = "content_load_errors_";
+    private static final String KEY_EMPTY_STATES = "empty_states_";
     
-    // Префиксы для категорий
-    private static final String PREFIX_MOVIES = "movies_";
-    private static final String PREFIX_TV = "tv_";
-    private static final String PREFIX_GAMES = "games_";
-    private static final String PREFIX_BOOKS = "books_";
-    private static final String PREFIX_ANIME = "anime_";
+    // Общая сессионная статистика
+    private static final Map<String, Integer> sessionStats = new HashMap<>();
     
     /**
-     * Увеличивает счетчик свайпов
+     * Отслеживает событие свайпа
      * @param context контекст приложения
      * @param category категория контента
-     * @param isLiked true, если лайк, false если дизлайк
+     * @param isRightSwipe true, если свайп вправо (лайк)
      */
-    public static void trackSwipe(Context context, String category, boolean isLiked) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String directionKey = isLiked ? "like" : "dislike";
-        String key = KEY_SWIPE_COUNT + "_" + getCategoryPrefix(category) + directionKey;
-        
-        int count = prefs.getInt(key, 0) + 1;
-        prefs.edit().putInt(key, count).apply();
-        
-        // Также обновляем общий счетчик
-        String totalKey = KEY_SWIPE_COUNT + "_total";
-        int totalCount = prefs.getInt(totalKey, 0) + 1;
-        prefs.edit().putInt(totalKey, totalCount).apply();
-        
-        Log.d(TAG, "Отслежен свайп: " + key + " = " + count + ", всего: " + totalCount);
+    public static void trackSwipe(Context context, String category, boolean isRightSwipe) {
+        try {
+            String normalizedCategory = normalizeKey(category);
+            String key = isRightSwipe ? KEY_SWIPES_RIGHT + normalizedCategory : KEY_SWIPES_LEFT + normalizedCategory;
+            
+            // Увеличиваем счетчик в SharedPreferences
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            int count = prefs.getInt(key, 0) + 1;
+            prefs.edit().putInt(key, count).apply();
+            
+            // Увеличиваем сессионный счетчик
+            incrementSessionStat(key, 1);
+            
+            Log.d(TAG, "Отслеживание свайпа: " + (isRightSwipe ? "вправо" : "влево") + 
+                    " для категории " + category + ", всего: " + count);
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при отслеживании свайпа: " + e.getMessage());
+        }
     }
     
     /**
-     * Увеличивает счетчик просмотров карточек
+     * Отслеживает загрузку контента
+     * @param context контекст приложения
+     * @param category категория контента
+     * @param count количество загруженных элементов
+     * @param success успешна ли загрузка
+     */
+    public static void trackContentLoad(Context context, String category, int count, boolean success) {
+        try {
+            String normalizedCategory = normalizeKey(category);
+            
+            if (success) {
+                // Увеличиваем счетчик успешных загрузок
+                String key = KEY_CONTENT_LOADED + normalizedCategory;
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                int totalCount = prefs.getInt(key, 0) + count;
+                prefs.edit().putInt(key, totalCount).apply();
+                
+                // Увеличиваем сессионный счетчик
+                incrementSessionStat(key, count);
+                
+                Log.d(TAG, "Отслеживание загрузки контента для категории " + category + 
+                        ", загружено: " + count + ", всего: " + totalCount);
+            } else {
+                // Увеличиваем счетчик ошибок загрузки
+                String key = KEY_CONTENT_LOAD_ERRORS + normalizedCategory;
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                int errorCount = prefs.getInt(key, 0) + 1;
+                prefs.edit().putInt(key, errorCount).apply();
+                
+                // Увеличиваем сессионный счетчик
+                incrementSessionStat(key, 1);
+                
+                Log.d(TAG, "Отслеживание ошибки загрузки контента для категории " + category + 
+                        ", всего ошибок: " + errorCount);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при отслеживании загрузки контента: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Отслеживает просмотр карточки
      * @param context контекст приложения
      * @param category категория контента
      */
     public static void trackCardView(Context context, String category) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String key = KEY_CARD_VIEW_COUNT + "_" + getCategoryPrefix(category);
-        
-        int count = prefs.getInt(key, 0) + 1;
-        prefs.edit().putInt(key, count).apply();
-        
-        // Также обновляем общий счетчик
-        String totalKey = KEY_CARD_VIEW_COUNT + "_total";
-        int totalCount = prefs.getInt(totalKey, 0) + 1;
-        prefs.edit().putInt(totalKey, totalCount).apply();
-    }
-    
-    /**
-     * Увеличивает счетчик загрузок контента
-     * @param context контекст приложения
-     * @param category категория контента
-     * @param itemsCount количество загруженных элементов
-     * @param isSuccess true, если загрузка успешна
-     */
-    public static void trackContentLoad(Context context, String category, int itemsCount, boolean isSuccess) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String statusKey = isSuccess ? "success" : "failure";
-        String key = KEY_CONTENT_LOAD_COUNT + "_" + getCategoryPrefix(category) + statusKey;
-        
-        int count = prefs.getInt(key, 0) + 1;
-        prefs.edit().putInt(key, count).apply();
-        
-        // Также сохраняем среднее количество элементов при успешной загрузке
-        if (isSuccess) {
-            String itemsKey = KEY_CONTENT_LOAD_COUNT + "_" + getCategoryPrefix(category) + "items_total";
-            int itemsTotal = prefs.getInt(itemsKey, 0) + itemsCount;
-            prefs.edit().putInt(itemsKey, itemsTotal).apply();
+        try {
+            String normalizedCategory = normalizeKey(category);
+            String key = KEY_CONTENT_VIEWS + normalizedCategory;
+            
+            // Увеличиваем счетчик просмотров
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            int viewCount = prefs.getInt(key, 0) + 1;
+            prefs.edit().putInt(key, viewCount).apply();
+            
+            // Увеличиваем сессионный счетчик
+            incrementSessionStat(key, 1);
+            
+            Log.d(TAG, "Отслеживание просмотра карточки для категории " + category + 
+                    ", всего просмотров: " + viewCount);
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при отслеживании просмотра карточки: " + e.getMessage());
         }
     }
     
     /**
-     * Увеличивает счетчик показов пустого состояния
+     * Отслеживает пустое состояние (когда нет карточек для показа)
      * @param context контекст приложения
      * @param category категория контента
      */
     public static void trackEmptyState(Context context, String category) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String key = KEY_EMPTY_STATE_COUNT + "_" + getCategoryPrefix(category);
-        
-        int count = prefs.getInt(key, 0) + 1;
-        prefs.edit().putInt(key, count).apply();
-        
-        // Также обновляем общий счетчик
-        String totalKey = KEY_EMPTY_STATE_COUNT + "_total";
-        int totalCount = prefs.getInt(totalKey, 0) + 1;
-        prefs.edit().putInt(totalKey, totalCount).apply();
-    }
-    
-    /**
-     * Увеличивает счетчик переключений фрагментов
-     * @param context контекст приложения
-     * @param fragmentName название фрагмента
-     */
-    public static void trackFragmentSwitch(Context context, String fragmentName) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String key = KEY_FRAGMENT_SWITCH_COUNT + "_" + fragmentName;
-        
-        int count = prefs.getInt(key, 0) + 1;
-        prefs.edit().putInt(key, count).apply();
-        
-        // Также обновляем общий счетчик
-        String totalKey = KEY_FRAGMENT_SWITCH_COUNT + "_total";
-        int totalCount = prefs.getInt(totalKey, 0) + 1;
-        prefs.edit().putInt(totalKey, totalCount).apply();
-    }
-    
-    /**
-     * Возвращает префикс для категории
-     * @param category категория контента
-     * @return префикс для категории
-     */
-    private static String getCategoryPrefix(String category) {
-        if (category == null) return "";
-        
-        String lowerCategory = category.toLowerCase();
-        
-        if (lowerCategory.contains("фильм")) {
-            return PREFIX_MOVIES;
-        } else if (lowerCategory.contains("сериал")) {
-            return PREFIX_TV;
-        } else if (lowerCategory.contains("игр")) {
-            return PREFIX_GAMES;
-        } else if (lowerCategory.contains("книг")) {
-            return PREFIX_BOOKS;
-        } else if (lowerCategory.contains("аниме")) {
-            return PREFIX_ANIME;
+        try {
+            String normalizedCategory = normalizeKey(category);
+            String key = KEY_EMPTY_STATES + normalizedCategory;
+            
+            // Увеличиваем счетчик пустых состояний
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            int emptyCount = prefs.getInt(key, 0) + 1;
+            prefs.edit().putInt(key, emptyCount).apply();
+            
+            // Увеличиваем сессионный счетчик
+            incrementSessionStat(key, 1);
+            
+            Log.d(TAG, "Отслеживание пустого состояния для категории " + category + 
+                    ", всего пустых состояний: " + emptyCount);
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при отслеживании пустого состояния: " + e.getMessage());
         }
-        
-        return "";
     }
     
     /**
-     * Получает все метрики аналитики
-     * @param context контекст приложения
-     * @return карта с метриками
+     * Получает статистику сессии
+     * @return отображение статистики
      */
-    public static Map<String, Integer> getAllMetrics(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        Map<String, Integer> metrics = new HashMap<>();
+    public static Map<String, Integer> getSessionStats() {
+        synchronized (sessionStats) {
+            return new HashMap<>(sessionStats);
+        }
+    }
+    
+    /**
+     * Сбрасывает статистику сессии
+     */
+    public static void resetSessionStats() {
+        synchronized (sessionStats) {
+            sessionStats.clear();
+        }
+    }
+    
+    /**
+     * Получает полную статистику из SharedPreferences
+     * @param context контекст приложения
+     * @return отображение статистики
+     */
+    public static Map<String, Integer> getAllStats(Context context) {
+        Map<String, Integer> stats = new HashMap<>();
         
-        // Получаем все метрики из SharedPreferences
-        Map<String, ?> allPrefs = prefs.getAll();
-        for (Map.Entry<String, ?> entry : allPrefs.entrySet()) {
-            if (entry.getValue() instanceof Integer) {
-                metrics.put(entry.getKey(), (Integer) entry.getValue());
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            Map<String, ?> allPrefs = prefs.getAll();
+            
+            for (Map.Entry<String, ?> entry : allPrefs.entrySet()) {
+                if (entry.getValue() instanceof Integer) {
+                    stats.put(entry.getKey(), (Integer) entry.getValue());
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при получении всей статистики: " + e.getMessage());
         }
         
-        return metrics;
+        return stats;
     }
     
     /**
-     * Очищает все метрики аналитики
-     * @param context контекст приложения
+     * Преобразует ключ категории для использования в SharedPreferences
+     * @param category категория контента
+     * @return нормализованный ключ
      */
-    public static void clearAllMetrics(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().clear().apply();
+    private static String normalizeKey(String category) {
+        if (category == null) {
+            return "unknown";
+        }
         
-        Log.d(TAG, "Все метрики аналитики очищены");
+        return category.toLowerCase()
+                .replace(" ", "_")
+                .replace(".", "_")
+                .replace(",", "_")
+                .replace("-", "_");
+    }
+    
+    /**
+     * Увеличивает значение счетчика в сессионной статистике
+     * @param key ключ
+     * @param increment значение для увеличения
+     */
+    private static void incrementSessionStat(String key, int increment) {
+        synchronized (sessionStats) {
+            int current = sessionStats.getOrDefault(key, 0);
+            sessionStats.put(key, current + increment);
+        }
     }
 }
