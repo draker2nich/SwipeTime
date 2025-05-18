@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Цвета для чипов категорий на экране избранного -->
+    <color name="category_movies">#FFF8E0E0</color>    <!-- Светло-красный -->
+    <color name="category_tv_shows">#FFE3F2FD</color>  <!-- Светло-синий -->
+    <color name="category_games">#FFE8F5E9</color>     <!-- Светло-зеленый -->
+    <color name="category_books">#FFFFF3E0</color>     <!-- Светло-оранжевый -->
+    <color name="category_anime">#FFF3E5F5</color>     <!-- Светло-фиолетовый -->
+    <color name="category_music">#FFFFEBEE</color>     <!-- Светло-розовый -->
+    <color name="category_default">#FFECEFF1</color>   <!-- Светло-серый -->
+</resources>

@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.draker.swipetime.R;
-import com.draker.swipetime.adapters.LikedContentAdapter;
+import com.draker.swipetime.adapters.ImprovedLikedContentAdapter;
 import com.draker.swipetime.database.entities.AnimeEntity;
 import com.draker.swipetime.database.entities.BookEntity;
 import com.draker.swipetime.database.entities.ContentEntity;
@@ -36,14 +36,14 @@ import com.draker.swipetime.repository.TVShowRepository;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LikedContentFragment extends Fragment implements LikedContentAdapter.OnItemClickListener {
+public class LikedContentFragment extends Fragment implements ImprovedLikedContentAdapter.OnItemClickListener {
 
     private static final String TAG = "LikedContentFragment";
     private static final String CURRENT_USER_ID = "user_1"; // ID текущего пользователя для демонстрации
 
     private RecyclerView recyclerView;
     private TextView emptyMessageTextView;
-    private LikedContentAdapter adapter;
+    private ImprovedLikedContentAdapter adapter;
     
     // Репозитории для получения данных
     private MovieRepository movieRepository;
@@ -94,7 +94,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
         
         // Настройка RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new LikedContentAdapter(getContext(), new ArrayList<>(), this);
+        adapter = new ImprovedLikedContentAdapter(getContext(), new ArrayList<>(), this);
         recyclerView.setAdapter(adapter);
         
         // Загрузка избранного контента
@@ -165,15 +165,47 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
                 item.setWatched(movie.isWatched());
                 item.setLiked(true); // Устанавливаем статус "избранное"
                 
+                // Добавляем дополнительные данные, если они есть
+                try {
+                    if (movie.getClass().getMethod("getGenres") != null) {
+                        item.setGenre((String) movie.getClass().getMethod("getGenres").invoke(movie));
+                    } else if (movie.getClass().getMethod("getGenre") != null) {
+                        item.setGenre((String) movie.getClass().getMethod("getGenre").invoke(movie));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (movie.getClass().getMethod("getReleaseYear") != null) {
+                        item.setYear((int) movie.getClass().getMethod("getReleaseYear").invoke(movie));
+                    } else if (movie.getClass().getMethod("getYear") != null) {
+                        item.setYear((int) movie.getClass().getMethod("getYear").invoke(movie));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (movie.getClass().getMethod("getDirector") != null) {
+                        item.setDirector((String) movie.getClass().getMethod("getDirector").invoke(movie));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
                 // Проверяем наличие отзыва и рейтинга
                 ReviewEntity review = reviewRepository.getByContentAndUserId(movie.getId(), CURRENT_USER_ID);
                 if (review != null) {
                     item.setRating(review.getRating());
                     item.setReview(review.getText());
+                } else {
+                    // Если нет отзыва, устанавливаем базовый рейтинг для демонстрации
+                    item.setRating(4.0f);
                 }
                 
                 likedItems.add(item);
-                Log.d(TAG, "Добавлен фильм в избранное: " + movie.getTitle());
+                Log.d(TAG, "Добавлен фильм в избранное: " + movie.getTitle() + " с изображением: " + movie.getImageUrl());
             }
             
             // Добавляем избранные сериалы
@@ -190,15 +222,55 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
                 item.setWatched(tvShow.isWatched());
                 item.setLiked(true); // Устанавливаем статус "избранное"
                 
+                // Добавляем дополнительные данные, если они есть
+                try {
+                    if (tvShow.getClass().getMethod("getGenres") != null) {
+                        item.setGenre((String) tvShow.getClass().getMethod("getGenres").invoke(tvShow));
+                    } else if (tvShow.getClass().getMethod("getGenre") != null) {
+                        item.setGenre((String) tvShow.getClass().getMethod("getGenre").invoke(tvShow));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (tvShow.getClass().getMethod("getReleaseYear") != null) {
+                        item.setYear((int) tvShow.getClass().getMethod("getReleaseYear").invoke(tvShow));
+                    } else if (tvShow.getClass().getMethod("getYear") != null) {
+                        item.setYear((int) tvShow.getClass().getMethod("getYear").invoke(tvShow));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (tvShow.getClass().getMethod("getSeasons") != null) {
+                        item.setSeasons((int) tvShow.getClass().getMethod("getSeasons").invoke(tvShow));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (tvShow.getClass().getMethod("getEpisodes") != null) {
+                        item.setEpisodes((int) tvShow.getClass().getMethod("getEpisodes").invoke(tvShow));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
                 // Проверяем наличие отзыва и рейтинга
                 ReviewEntity review = reviewRepository.getByContentAndUserId(tvShow.getId(), CURRENT_USER_ID);
                 if (review != null) {
                     item.setRating(review.getRating());
                     item.setReview(review.getText());
+                } else {
+                    // Если нет отзыва, устанавливаем базовый рейтинг для демонстрации
+                    item.setRating(4.5f);
                 }
                 
                 likedItems.add(item);
-                Log.d(TAG, "Добавлен сериал в избранное: " + tvShow.getTitle());
+                Log.d(TAG, "Добавлен сериал в избранное: " + tvShow.getTitle() + " с изображением: " + tvShow.getImageUrl());
             }
             
             // Добавляем избранные игры
@@ -215,15 +287,57 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
                 item.setWatched(game.isCompleted());
                 item.setLiked(true); // Устанавливаем статус "избранное"
                 
+                // Добавляем дополнительные данные, если они есть
+                try {
+                    if (game.getClass().getMethod("getGenres") != null) {
+                        item.setGenre((String) game.getClass().getMethod("getGenres").invoke(game));
+                    } else if (game.getClass().getMethod("getGenre") != null) {
+                        item.setGenre((String) game.getClass().getMethod("getGenre").invoke(game));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (game.getClass().getMethod("getReleaseYear") != null) {
+                        item.setYear((int) game.getClass().getMethod("getReleaseYear").invoke(game));
+                    } else if (game.getClass().getMethod("getYear") != null) {
+                        item.setYear((int) game.getClass().getMethod("getYear").invoke(game));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (game.getClass().getMethod("getDeveloper") != null) {
+                        item.setDeveloper((String) game.getClass().getMethod("getDeveloper").invoke(game));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (game.getClass().getMethod("getPlatforms") != null) {
+                        item.setPlatforms((String) game.getClass().getMethod("getPlatforms").invoke(game));
+                    } else if (game.getClass().getMethod("getPlatform") != null) {
+                        item.setPlatforms((String) game.getClass().getMethod("getPlatform").invoke(game));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
                 // Проверяем наличие отзыва и рейтинга
                 ReviewEntity review = reviewRepository.getByContentAndUserId(game.getId(), CURRENT_USER_ID);
                 if (review != null) {
                     item.setRating(review.getRating());
                     item.setReview(review.getText());
+                } else {
+                    // Если нет отзыва, устанавливаем базовый рейтинг для демонстрации
+                    item.setRating(4.8f);
                 }
                 
                 likedItems.add(item);
-                Log.d(TAG, "Добавлена игра в избранное: " + game.getTitle());
+                Log.d(TAG, "Добавлена игра в избранное: " + game.getTitle() + " с изображением: " + game.getImageUrl());
             }
             
             // Добавляем избранные книги
@@ -240,15 +354,67 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
                 item.setWatched(book.isRead());
                 item.setLiked(true); // Устанавливаем статус "избранное"
                 
+                // Добавляем дополнительные данные, если они есть
+                try {
+                    if (book.getClass().getMethod("getGenres") != null) {
+                        item.setGenre((String) book.getClass().getMethod("getGenres").invoke(book));
+                    } else if (book.getClass().getMethod("getGenre") != null) {
+                        item.setGenre((String) book.getClass().getMethod("getGenre").invoke(book));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (book.getClass().getMethod("getReleaseYear") != null) {
+                        item.setYear((int) book.getClass().getMethod("getReleaseYear").invoke(book));
+                    } else if (book.getClass().getMethod("getYear") != null) {
+                        item.setYear((int) book.getClass().getMethod("getYear").invoke(book));
+                    } else if (book.getClass().getMethod("getPublicationYear") != null) {
+                        item.setYear((int) book.getClass().getMethod("getPublicationYear").invoke(book));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (book.getClass().getMethod("getAuthor") != null) {
+                        item.setAuthor((String) book.getClass().getMethod("getAuthor").invoke(book));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (book.getClass().getMethod("getPublisher") != null) {
+                        item.setPublisher((String) book.getClass().getMethod("getPublisher").invoke(book));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (book.getClass().getMethod("getPages") != null) {
+                        item.setPages((int) book.getClass().getMethod("getPages").invoke(book));
+                    } else if (book.getClass().getMethod("getPageCount") != null) {
+                        item.setPages((int) book.getClass().getMethod("getPageCount").invoke(book));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
                 // Проверяем наличие отзыва и рейтинга
                 ReviewEntity review = reviewRepository.getByContentAndUserId(book.getId(), CURRENT_USER_ID);
                 if (review != null) {
                     item.setRating(review.getRating());
                     item.setReview(review.getText());
+                } else {
+                    // Если нет отзыва, устанавливаем базовый рейтинг для демонстрации
+                    item.setRating(4.2f);
                 }
                 
                 likedItems.add(item);
-                Log.d(TAG, "Добавлена книга в избранное: " + book.getTitle());
+                Log.d(TAG, "Добавлена книга в избранное: " + book.getTitle() + " с изображением: " + book.getImageUrl());
             }
             
             // Добавляем избранное аниме
@@ -265,15 +431,57 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
                 item.setWatched(anime.isWatched());
                 item.setLiked(true); // Устанавливаем статус "избранное"
                 
+                // Добавляем дополнительные данные, если они есть
+                try {
+                    if (anime.getClass().getMethod("getGenres") != null) {
+                        item.setGenre((String) anime.getClass().getMethod("getGenres").invoke(anime));
+                    } else if (anime.getClass().getMethod("getGenre") != null) {
+                        item.setGenre((String) anime.getClass().getMethod("getGenre").invoke(anime));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (anime.getClass().getMethod("getReleaseYear") != null) {
+                        item.setYear((int) anime.getClass().getMethod("getReleaseYear").invoke(anime));
+                    } else if (anime.getClass().getMethod("getYear") != null) {
+                        item.setYear((int) anime.getClass().getMethod("getYear").invoke(anime));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (anime.getClass().getMethod("getStudio") != null) {
+                        item.setStudio((String) anime.getClass().getMethod("getStudio").invoke(anime));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
+                try {
+                    if (anime.getClass().getMethod("getEpisodes") != null) {
+                        item.setEpisodes((int) anime.getClass().getMethod("getEpisodes").invoke(anime));
+                    } else if (anime.getClass().getMethod("getEpisodeCount") != null) {
+                        item.setEpisodes((int) anime.getClass().getMethod("getEpisodeCount").invoke(anime));
+                    }
+                } catch (Exception e) {
+                    // Игнорируем ошибки при рефлексии
+                }
+                
                 // Проверяем наличие отзыва и рейтинга
                 ReviewEntity review = reviewRepository.getByContentAndUserId(anime.getId(), CURRENT_USER_ID);
                 if (review != null) {
                     item.setRating(review.getRating());
                     item.setReview(review.getText());
+                } else {
+                    // Если нет отзыва, устанавливаем базовый рейтинг для демонстрации
+                    item.setRating(4.4f);
                 }
                 
                 likedItems.add(item);
-                Log.d(TAG, "Добавлено аниме в избранное: " + anime.getTitle());
+                Log.d(TAG, "Добавлено аниме в избранное: " + anime.getTitle() + " с изображением: " + anime.getImageUrl());
             }
             
             // Добавляем прочий избранный контент (включая музыку и другие категории)
@@ -316,12 +524,17 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
                         item.setRating(review.getRating());
                         item.setReview(review.getText());
                     } else {
-                        // Если отзыва нет, используем рейтинг из самой ContentEntity
-                        item.setRating(content.getRating());
+                        // Если отзыва нет, используем рейтинг из самой ContentEntity или устанавливаем по умолчанию
+                        if (content.getRating() > 0) {
+                            item.setRating(content.getRating());
+                        } else {
+                            item.setRating(4.0f); // Базовый рейтинг для демонстрации
+                        }
                     }
                     
                     likedItems.add(item);
-                    Log.d(TAG, "Добавлен прочий контент в избранное: " + content.getTitle() + " (категория: " + content.getCategory() + ")");
+                    Log.d(TAG, "Добавлен прочий контент в избранное: " + content.getTitle() + 
+                            " (категория: " + content.getCategory() + ") с изображением: " + content.getImageUrl());
                 }
             }
             
@@ -375,7 +588,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
             movie.setId("test_movie_1");
             movie.setTitle("Тестовый фильм");
             movie.setDescription("Это тестовый фильм для отображения в избранном");
-            movie.setImageUrl("url_to_image");
+            movie.setImageUrl("https://m.media-amazon.com/images/M/MV5BMzUzNDM2NjQ5M15BMl5BanBnXkFtZTgwNTM3NTg4OTE@._V1_UX182_CR0,0,182,268_AL_.jpg");
             movie.setCategory("Фильмы");
             movie.setContentType("movie");
             movie.setLiked(true); // Важно: помечаем как избранное
@@ -387,7 +600,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
             tvShow.setId("test_tvshow_1");
             tvShow.setTitle("Тестовый сериал");
             tvShow.setDescription("Это тестовый сериал для отображения в избранном");
-            tvShow.setImageUrl("url_to_image");
+            tvShow.setImageUrl("https://m.media-amazon.com/images/M/MV5BMjA5MTE1MjQyNV5BMl5BanBnXkFtZTgwMzI5Njc0ODE@._V1_UX182_CR0,0,182,268_AL_.jpg");
             tvShow.setCategory("Сериалы");
             tvShow.setContentType("tvshow");
             tvShow.setLiked(true); // Помечаем как избранное
@@ -399,7 +612,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
             game.setId("test_game_1");
             game.setTitle("Тестовая игра");
             game.setDescription("Это тестовая игра для отображения в избранном");
-            game.setImageUrl("url_to_image");
+            game.setImageUrl("https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/capsule_616x353.jpg");
             game.setCategory("Игры");
             game.setContentType("game");
             game.setLiked(true); // Помечаем как избранное
@@ -411,7 +624,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
             book.setId("test_book_1");
             book.setTitle("Тестовая книга");
             book.setDescription("Это тестовая книга для отображения в избранном");
-            book.setImageUrl("url_to_image");
+            book.setImageUrl("https://m.media-amazon.com/images/I/51bVNTqHFlL._SX323_BO1,204,203,200_.jpg");
             book.setCategory("Книги");
             book.setContentType("book");
             book.setLiked(true); // Помечаем как избранное
@@ -423,7 +636,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
             anime.setId("test_anime_1");
             anime.setTitle("Тестовое аниме");
             anime.setDescription("Это тестовое аниме для отображения в избранном");
-            anime.setImageUrl("url_to_image");
+            anime.setImageUrl("https://cdn.myanimelist.net/images/anime/1171/109222.jpg");
             anime.setCategory("Аниме");
             anime.setContentType("anime");
             anime.setLiked(true); // Помечаем как избранное
@@ -435,7 +648,7 @@ public class LikedContentFragment extends Fragment implements LikedContentAdapte
             music.setId("test_music_1");
             music.setTitle("Тестовая музыка");
             music.setDescription("Это тестовая музыка для отображения в избранном");
-            music.setImageUrl("url_to_image");
+            music.setImageUrl("https://i.pinimg.com/originals/a1/3c/25/a13c25087e34a7d92f9bd0be4ba535a5.jpg");
             music.setCategory("Музыка");
             music.setContentType("music");
             music.setLiked(true); // Помечаем как избранное
