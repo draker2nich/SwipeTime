@@ -47,11 +47,14 @@ public class MovieRepository {
     }
 
     /**
-     * Удалить фильм
-     * @param movie фильм
+     * Удалить фильм по ID
+     * @param id ID фильма
      */
-    public void delete(MovieEntity movie) {
-        movieDao.delete(movie);
+    public void deleteById(String id) {
+        MovieEntity movie = movieDao.getById(id);
+        if (movie != null) {
+            movieDao.delete(movie);
+        }
     }
 
     /**

@@ -3,12 +3,14 @@ package com.draker.swipetime;
 import android.app.Application;
 import android.util.Log;
 
+import com.draker.swipetime.api.ApiDataManager;
 import com.draker.swipetime.api.ApiIntegrationManager;
 import com.draker.swipetime.database.AppDatabase;
 import com.draker.swipetime.database.DataGenerator;
 import com.draker.swipetime.database.DatabaseCleaner;
 import com.draker.swipetime.database.DbCleanerUtil;
 import com.draker.swipetime.utils.AchievementNotifier;
+import com.draker.swipetime.utils.ContentShuffler;
 import com.draker.swipetime.utils.FirebaseAuthManager;
 import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.GamificationManager;
@@ -21,6 +23,9 @@ import com.google.firebase.FirebaseApp;
 public class SwipeTimeApplication extends Application {
     private static final String TAG = "SwipeTimeApplication";
     private static final String DATABASE_NAME = "swipetime-db";
+    
+    // Флаг для отслеживания первого запуска приложения
+    private static boolean isFirstLaunch = true;
 
     @Override
     public void onCreate() {
@@ -33,11 +38,19 @@ public class SwipeTimeApplication extends Application {
         ImageCacheManager.initImageCache(this);
         
         try {
+            // Очистка тестовых данных при первом запуске
+            if (isFirstLaunch) {
+                // Очищаем тестовые данные
+                cleanupTestData();
+                
+                // Сбрасываем кеши API и истории показа
+                resetCaches();
+                
+                isFirstLaunch = false;
+            }
+            
             // Заполнить базу данных базовыми данными (только пользователя)
             DataGenerator.populateDatabase(this);
-            
-            // Очистка тестовых данных (если они есть)
-            DbCleanerUtil.clearTestData(this);
             
             // Инициализация системы геймификации
             GamificationIntegrator.ensureUserInitialized(this);
@@ -80,6 +93,39 @@ public class SwipeTimeApplication extends Application {
                 throw e;
             }
         }
+    }
+    
+    /**
+     * Очистка тестовых данных
+     */
+    private void cleanupTestData() {
+        Log.d(TAG, "Запуск полной очистки данных...");
+        
+        // Используем DbCleanerUtil для удаления всех данных
+        DbCleanerUtil.clearAllData(this);
+        
+        // Ждем немного, чтобы операция очистки успела выполниться
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Прерывание во время ожидания очистки данных: " + e.getMessage());
+        }
+        
+        Log.d(TAG, "Очистка данных запущена");
+    }
+    
+    /**
+     * Сбросить все кеши состояния
+     */
+    private void resetCaches() {
+        // Сбрасываем API кеши
+        ApiDataManager.getInstance().resetAllLoadedItems();
+        ApiDataManager.getInstance().resetAllPageTokens();
+        
+        // Сбрасываем историю показа контента
+        ContentShuffler.resetAllHistory();
+        
+        Log.d(TAG, "Все кеши успешно сброшены");
     }
     
     /**

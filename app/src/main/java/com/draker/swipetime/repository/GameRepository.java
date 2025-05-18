@@ -47,11 +47,14 @@ public class GameRepository {
     }
 
     /**
-     * Удалить игру
-     * @param game игра
+     * Удалить игру по ID
+     * @param id ID игры
      */
-    public void delete(GameEntity game) {
-        gameDao.delete(game);
+    public void deleteById(String id) {
+        GameEntity game = gameDao.getById(id);
+        if (game != null) {
+            gameDao.delete(game);
+        }
     }
 
     /**

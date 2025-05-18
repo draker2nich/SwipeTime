@@ -3,7 +3,12 @@ package com.draker.swipetime.api;
 import android.app.Application;
 import android.util.Log;
 
+import com.draker.swipetime.database.entities.AnimeEntity;
+import com.draker.swipetime.database.entities.BookEntity;
 import com.draker.swipetime.database.entities.ContentEntity;
+import com.draker.swipetime.database.entities.GameEntity;
+import com.draker.swipetime.database.entities.MovieEntity;
+import com.draker.swipetime.database.entities.TVShowEntity;
 import com.draker.swipetime.fragments.CardStackFragmentHelper;
 import com.draker.swipetime.repository.AnimeRepository;
 import com.draker.swipetime.repository.BookRepository;
@@ -11,6 +16,9 @@ import com.draker.swipetime.repository.ContentRepository;
 import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
+import com.draker.swipetime.utils.ContentShuffler;
+
+import java.util.List;
 
 /**
  * Менеджер интеграции внешних API в приложение
@@ -27,6 +35,9 @@ public class ApiIntegrationManager {
     private final BookRepository bookRepository;
     private final AnimeRepository animeRepository;
     private final ContentRepository contentRepository;
+    
+    // Добавляем ApiIntegrationHelper
+    private final ApiIntegrationHelper apiIntegrationHelper;
     
     /**
      * Интерфейс для обратного вызова при инициализации API
@@ -61,6 +72,9 @@ public class ApiIntegrationManager {
         this.bookRepository = new BookRepository(application);
         this.animeRepository = new AnimeRepository(application);
         this.contentRepository = new ContentRepository(application);
+        
+        // Инициализируем ApiIntegrationHelper
+        this.apiIntegrationHelper = new ApiIntegrationHelper(application);
     }
     
     /**
@@ -70,342 +84,39 @@ public class ApiIntegrationManager {
     public void initializeApiIntegration(ApiInitCallback callback) {
         Log.d(TAG, "Начало инициализации интеграции API");
         
+        // Сбрасываем все кеши API и перемешивания
+        apiManager.resetAllCaches();
+        ContentShuffler.resetAllHistory();
+        
         // Проверяем, есть ли уже данные в базе данных
-        boolean hasMovies = movieRepository.getCount() >= 10;
-        boolean hasTVShows = tvShowRepository.getCount() >= 10;
-        boolean hasGames = gameRepository.getCount() >= 10;
-        boolean hasBooks = bookRepository.getCount() >= 10;
-        boolean hasAnime = animeRepository.getCount() >= 10;
+        boolean hasMovies = movieRepository.getCount() >= 5;
+        boolean hasTVShows = tvShowRepository.getCount() >= 5;
+        boolean hasGames = gameRepository.getCount() >= 5;
+        boolean hasBooks = bookRepository.getCount() >= 5;
+        boolean hasAnime = animeRepository.getCount() >= 5;
         
-        if (hasMovies && hasTVShows && hasGames && hasBooks && hasAnime) {
-            Log.d(TAG, "Все категории контента уже загружены в базу данных");
-            callback.onComplete(true);
-            return;
-        }
+        Log.d(TAG, "Данные в базе: фильмы=" + movieRepository.getCount() + 
+                ", сериалы=" + tvShowRepository.getCount() + 
+                ", игры=" + gameRepository.getCount() +
+                ", книги=" + bookRepository.getCount() +
+                ", аниме=" + animeRepository.getCount());
         
-        Log.d(TAG, "Необходимо загрузить данные для следующих категорий: " + 
-                (!hasMovies ? "Фильмы " : "") + 
-                (!hasTVShows ? "Сериалы " : "") + 
-                (!hasGames ? "Игры " : "") + 
-                (!hasBooks ? "Книги " : "") + 
-                (!hasAnime ? "Аниме" : ""));
+        // Всегда загружаем новые данные
+        Log.d(TAG, "Загружаем свежие данные для всех категорий");
         
-        // Последовательно загружаем данные для каждой категории
-        loadApiDataForCategory("Фильмы", hasMovies, new CardStackFragmentHelper.ApiLoadCallback() {
+        // Используем ApiIntegrationHelper для загрузки всех типов контента
+        apiIntegrationHelper.loadAllContentTypes(25, new ApiIntegrationHelper.LoadCallback() {
             @Override
-            public void onComplete(boolean success) {
-                loadApiDataForCategory("Сериалы", hasTVShows, new CardStackFragmentHelper.ApiLoadCallback() {
-                    @Override
-                    public void onComplete(boolean success) {
-                        loadApiDataForCategory("Игры", hasGames, new CardStackFragmentHelper.ApiLoadCallback() {
-                            @Override
-                            public void onComplete(boolean success) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                Log.d(TAG, "Завершена инициализация интеграции API");
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                Log.e(TAG, "Ошибка при загрузке данных аниме: " + errorMessage);
-                                                callback.onComplete(true); // Всё равно считаем успешным, т.к. не критично
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        Log.e(TAG, "Ошибка при загрузке данных книг: " + errorMessage);
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onError(String errorMessage) {
-                                Log.e(TAG, "Ошибка при загрузке данных игр: " + errorMessage);
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        Log.e(TAG, "Ошибка при загрузке данных сериалов: " + errorMessage);
-                        loadApiDataForCategory("Игры", hasGames, new CardStackFragmentHelper.ApiLoadCallback() {
-                            @Override
-                            public void onComplete(boolean success) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onError(String errorMessage) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                Log.e(TAG, "Ошибка при загрузке данных фильмов: " + errorMessage);
-                loadApiDataForCategory("Сериалы", hasTVShows, new CardStackFragmentHelper.ApiLoadCallback() {
-                    @Override
-                    public void onComplete(boolean success) {
-                        loadApiDataForCategory("Игры", hasGames, new CardStackFragmentHelper.ApiLoadCallback() {
-                            @Override
-                            public void onComplete(boolean success) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onError(String errorMessage) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        loadApiDataForCategory("Игры", hasGames, new CardStackFragmentHelper.ApiLoadCallback() {
-                            @Override
-                            public void onComplete(boolean success) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onError(String errorMessage) {
-                                loadApiDataForCategory("Книги", hasBooks, new CardStackFragmentHelper.ApiLoadCallback() {
-                                    @Override
-                                    public void onComplete(boolean success) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String errorMessage) {
-                                        loadApiDataForCategory("Аниме", hasAnime, new CardStackFragmentHelper.ApiLoadCallback() {
-                                            @Override
-                                            public void onComplete(boolean success) {
-                                                callback.onComplete(true);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                callback.onComplete(true);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
+            public void onComplete(boolean success, String status) {
+                if (success) {
+                    Log.d(TAG, "Успешно загружены все типы контента: " + status);
+                    callback.onComplete(true);
+                } else {
+                    Log.e(TAG, "Ошибка при загрузке контента: " + status);
+                    // Даже если есть ошибка, считаем инициализацию успешной
+                    // чтобы не блокировать запуск приложения
+                    callback.onComplete(true);
+                }
             }
         });
     }
@@ -438,19 +149,226 @@ public class ApiIntegrationManager {
     }
     
     /**
-     * Поиск контента по запросу для указанной категории
-     * @param query поисковый запрос
+     * Обновить данные для указанной категории
      * @param categoryName название категории
-     * @param callback обратный вызов по завершении поиска
+     * @param itemsCount количество элементов для загрузки
+     * @param callback обратный вызов по завершении обновления
      */
-    public void searchContentForCategory(String query, String categoryName, CardStackFragmentHelper.ApiLoadCallback callback) {
-        Log.d(TAG, "Поиск контента по запросу: " + query + " для категории: " + categoryName);
+    public void refreshCategoryContent(String categoryName, int itemsCount, ApiInitCallback callback) {
+        Log.d(TAG, "Обновление контента для категории: " + categoryName);
         
-        CardStackFragmentHelper.searchContentForCategory(
-                query,
-                categoryName,
-                apiManager,
-                callback
-        );
+        // Определяем тип API в зависимости от категории
+        String apiCategory;
+        switch (categoryName.toLowerCase()) {
+            case "фильмы":
+                apiCategory = "movie";
+                break;
+            case "сериалы":
+                apiCategory = "tv_show";
+                break;
+            case "игры":
+                apiCategory = "game";
+                break;
+            case "книги":
+                apiCategory = "book";
+                break;
+            case "аниме":
+                apiCategory = "anime";
+                break;
+            default:
+                apiCategory = "movie"; // По умолчанию используем фильмы
+                break;
+        }
+        
+        // Сбрасываем кеш для выбранной категории
+        apiManager.resetCategoryCache(apiCategory);
+        
+        // Загружаем свежие данные для конкретной категории
+        switch (apiCategory) {
+            case "movie":
+                loadMoviesData(itemsCount, callback);
+                break;
+            case "tv_show":
+                loadTVShowsData(itemsCount, callback);
+                break;
+            case "game":
+                loadGamesData(itemsCount, callback);
+                break;
+            case "book":
+                loadBooksData(itemsCount, callback);
+                break;
+            case "anime":
+                loadAnimeData(itemsCount, callback);
+                break;
+            default:
+                callback.onError("Неизвестная категория: " + categoryName);
+                break;
+        }
+    }
+    
+    /**
+     * Загрузить данные о фильмах
+     * @param itemsCount количество элементов для загрузки
+     * @param callback обратный вызов по завершении загрузки
+     */
+    private void loadMoviesData(int itemsCount, ApiInitCallback callback) {
+        for (int page = 1; page <= 2; page++) {
+            final int currentPage = page;
+            apiManager.loadPopularMovies(currentPage, new ApiManager.ApiCallback<MovieEntity>() {
+                @Override
+                public void onSuccess(List<MovieEntity> data) {
+                    Log.d(TAG, "Загружено " + data.size() + " фильмов (страница " + currentPage + ")");
+                    if (currentPage == 2) {
+                        callback.onComplete(true);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    Log.e(TAG, "Ошибка загрузки фильмов: " + error.getMessage());
+                    callback.onError(error.getMessage());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Загрузить данные о сериалах
+     * @param itemsCount количество элементов для загрузки
+     * @param callback обратный вызов по завершении загрузки
+     */
+    private void loadTVShowsData(int itemsCount, ApiInitCallback callback) {
+        for (int page = 1; page <= 2; page++) {
+            final int currentPage = page;
+            apiManager.loadPopularTVShows(currentPage, new ApiManager.ApiCallback<TVShowEntity>() {
+                @Override
+                public void onSuccess(List<TVShowEntity> data) {
+                    Log.d(TAG, "Загружено " + data.size() + " сериалов (страница " + currentPage + ")");
+                    if (currentPage == 2) {
+                        callback.onComplete(true);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    Log.e(TAG, "Ошибка загрузки сериалов: " + error.getMessage());
+                    callback.onError(error.getMessage());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Загрузить данные об играх
+     * @param itemsCount количество элементов для загрузки
+     * @param callback обратный вызов по завершении загрузки
+     */
+    private void loadGamesData(int itemsCount, ApiInitCallback callback) {
+        for (int page = 1; page <= 2; page++) {
+            final int currentPage = page;
+            apiManager.loadPopularGames(currentPage, new ApiManager.ApiCallback<GameEntity>() {
+                @Override
+                public void onSuccess(List<GameEntity> data) {
+                    Log.d(TAG, "Загружено " + data.size() + " игр (страница " + currentPage + ")");
+                    if (currentPage == 2) {
+                        callback.onComplete(true);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    Log.e(TAG, "Ошибка загрузки игр: " + error.getMessage());
+                    callback.onError(error.getMessage());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Загрузить данные о книгах
+     * @param itemsCount количество элементов для загрузки
+     * @param callback обратный вызов по завершении загрузки
+     */
+    private void loadBooksData(int itemsCount, ApiInitCallback callback) {
+        // Для книг используем разные поисковые запросы для получения разнообразного контента
+        String[] queries = {"fantasy", "science", "history", "novel", "classic"};
+        
+        for (int i = 0; i < Math.min(queries.length, 2); i++) {
+            final int index = i;
+            apiManager.searchBooks(queries[i], 1, new ApiManager.ApiCallback<BookEntity>() {
+                @Override
+                public void onSuccess(List<BookEntity> data) {
+                    Log.d(TAG, "Загружено " + data.size() + " книг (запрос: " + queries[index] + ")");
+                    if (index == Math.min(queries.length, 2) - 1) {
+                        callback.onComplete(true);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    Log.e(TAG, "Ошибка загрузки книг: " + error.getMessage());
+                    callback.onError(error.getMessage());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Загрузить данные об аниме
+     * @param itemsCount количество элементов для загрузки
+     * @param callback обратный вызов по завершении загрузки
+     */
+    private void loadAnimeData(int itemsCount, ApiInitCallback callback) {
+        for (int page = 1; page <= 2; page++) {
+            final int currentPage = page;
+            apiManager.loadTopAnime(currentPage, new ApiManager.ApiCallback<AnimeEntity>() {
+                @Override
+                public void onSuccess(List<AnimeEntity> data) {
+                    Log.d(TAG, "Загружено " + data.size() + " аниме (страница " + currentPage + ")");
+                    if (currentPage == 2) {
+                        callback.onComplete(true);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    Log.e(TAG, "Ошибка загрузки аниме: " + error.getMessage());
+                    callback.onError(error.getMessage());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Обновить все категории контента новыми данными
+     * @param itemsPerCategory количество элементов, которое нужно получить для каждой категории
+     * @param callback обратный вызов по завершении обновления
+     */
+    public void refreshAllContentTypes(int itemsPerCategory, ApiInitCallback callback) {
+        Log.d(TAG, "Обновление всех категорий контента");
+        
+        // Сбрасываем кеши API перед обновлением данных
+        apiManager.resetAllCaches();
+        
+        // Используем ApiIntegrationHelper для загрузки всех типов контента
+        apiIntegrationHelper.loadAllContentTypes(itemsPerCategory, new ApiIntegrationHelper.LoadCallback() {
+            @Override
+            public void onComplete(boolean success, String status) {
+                if (success) {
+                    Log.d(TAG, "Успешно обновлены все типы контента: " + status);
+                    callback.onComplete(true);
+                } else {
+                    Log.e(TAG, "Ошибка при обновлении контента: " + status);
+                    callback.onError(status);
+                }
+            }
+        });
+    }
+    
+    /**
+     * Очистить ресурсы
+     */
+    public void clear() {
+        apiIntegrationHelper.clear();
     }
 }

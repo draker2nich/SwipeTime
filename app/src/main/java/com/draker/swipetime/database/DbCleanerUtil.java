@@ -52,6 +52,46 @@ public class DbCleanerUtil {
     }
     
     /**
+     * Радикально удаляет все данные из базы данных, кроме пользовательских настроек
+     * @param context контекст приложения
+     */
+    public static void clearAllData(Context context) {
+        Log.d(TAG, "Запуск полной очистки данных");
+        
+        executor.execute(() -> {
+            try {
+                AppDatabase db = AppDatabase.getInstance(context);
+                SupportSQLiteDatabase sqliteDb = db.getOpenHelper().getWritableDatabase();
+                
+                // Отключаем проверку внешних ключей для безопасного удаления
+                sqliteDb.execSQL("PRAGMA foreign_keys = OFF");
+                
+                // Удаляем все данные из всех таблиц
+                sqliteDb.execSQL("DELETE FROM movies");
+                sqliteDb.execSQL("DELETE FROM tv_shows");
+                sqliteDb.execSQL("DELETE FROM games");
+                sqliteDb.execSQL("DELETE FROM books");
+                sqliteDb.execSQL("DELETE FROM anime");
+                sqliteDb.execSQL("DELETE FROM content");
+                
+                // Удаляем вспомогательные данные
+                sqliteDb.execSQL("DELETE FROM reviews");
+                
+                // Сбрасываем автоинкрементные идентификаторы
+                sqliteDb.execSQL("DELETE FROM sqlite_sequence");
+                
+                // Включаем обратно проверку внешних ключей
+                sqliteDb.execSQL("PRAGMA foreign_keys = ON");
+                
+                Log.d(TAG, "Полная очистка данных успешно завершена");
+            } catch (Exception e) {
+                Log.e(TAG, "Ошибка при полной очистке данных: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    /**
      * Удаляет тестовые данные из всех категорий, но сохраняет пользовательские данные
      * @param context контекст приложения
      */
@@ -87,7 +127,7 @@ public class DbCleanerUtil {
                 Log.d(TAG, "Удалены тестовые данные аниме");
                 
                 // Очищаем контент, не связанный с понравившимися элементами
-                sqliteDb.execSQL("DELETE FROM content WHERE type NOT IN ('music') AND liked = 0");
+                sqliteDb.execSQL("DELETE FROM content WHERE liked = 0");
                 Log.d(TAG, "Удален тестовый общий контент");
                 
                 // Включаем обратно проверку внешних ключей

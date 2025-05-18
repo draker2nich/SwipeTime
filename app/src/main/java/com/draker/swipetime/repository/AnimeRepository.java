@@ -47,11 +47,14 @@ public class AnimeRepository {
     }
 
     /**
-     * Удалить аниме
-     * @param anime аниме
+     * Удалить аниме по ID
+     * @param id ID аниме
      */
-    public void delete(AnimeEntity anime) {
-        animeDao.delete(anime);
+    public void deleteById(String id) {
+        AnimeEntity anime = animeDao.getById(id);
+        if (anime != null) {
+            animeDao.delete(anime);
+        }
     }
 
     /**

@@ -47,11 +47,14 @@ public class TVShowRepository {
     }
 
     /**
-     * Удалить сериал
-     * @param tvShow сериал
+     * Удалить сериал по ID
+     * @param id ID сериала
      */
-    public void delete(TVShowEntity tvShow) {
-        tvShowDao.delete(tvShow);
+    public void deleteById(String id) {
+        TVShowEntity tvShow = tvShowDao.getById(id);
+        if (tvShow != null) {
+            tvShowDao.delete(tvShow);
+        }
     }
 
     /**

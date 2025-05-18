@@ -56,7 +56,9 @@ import com.yuyakaido.android.cardstackview.SwipeAnimationSetting;
 import com.yuyakaido.android.cardstackview.SwipeableMethod;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class CardStackFragment extends Fragment implements CardStackListener, FilterSettingsFragment.OnFilterSettingsClosedListener {
 
@@ -71,6 +73,9 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
     private TextView categoryTitleView;
     private TextView filtersAppliedIndicator;
     private String categoryName;
+    
+    // Для отслеживания загрузки данных
+    private boolean isLoading = false;
 
     // Репозитории для работы с базой данных
     private MovieRepository movieRepository;
@@ -375,53 +380,115 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
      * Загружает дополнительный контент из внешних API
      */
     private void loadAdditionalContentFromApi() {
+        // Проверяем, не загружается ли уже контент
+        if (isLoading) {
+            return;
+        }
+        
+        isLoading = true;
+        
+        // Показываем индикатор загрузки
+        Toast.makeText(getContext(), "Загружаем дополнительный контент...", Toast.LENGTH_SHORT).show();
+        
         // Создаем API менеджер
         com.draker.swipetime.api.ApiIntegrationManager apiManager = 
                 com.draker.swipetime.api.ApiIntegrationManager.getInstance(
                         requireActivity().getApplication()
                 );
         
-        // Загружаем данные для текущей категории
-        apiManager.initializeApiIntegration(new com.draker.swipetime.api.ApiIntegrationManager.ApiInitCallback() {
+        // Обновляем данные из API для текущей категории
+        apiManager.refreshCategoryContent(categoryName, 15, new com.draker.swipetime.api.ApiIntegrationManager.ApiInitCallback() {
             @Override
             public void onComplete(boolean success) {
                 if (success) {
                     // Обновляем список элементов после загрузки
-                    getActivity().runOnUiThread(() -> {
-                        Toast.makeText(getContext(), "Контент загружен успешно", Toast.LENGTH_SHORT).show();
-                        
-                        // Перезагружаем карточки
-                        if (filtersApplied) {
-                            reloadCardsWithFilters();
-                        } else {
-                            String userId = getCurrentUserId();
-                            List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
-                                    categoryName,
-                                    userId,
-                                    movieRepository,
-                                    tvShowRepository,
-                                    gameRepository,
-                                    bookRepository,
-                                    animeRepository,
-                                    contentRepository,
-                                    preferencesRepository
-                            );
-                            adapter.setItems(allItems);
-                        }
-                    });
+                    refreshCardsAfterApiLoad();
                 } else {
-                    getActivity().runOnUiThread(() -> 
-                            Toast.makeText(getContext(), "Не удалось загрузить дополнительный контент", Toast.LENGTH_SHORT).show()
-                    );
+                    getActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "Не удалось загрузить дополнительный контент", Toast.LENGTH_SHORT).show();
+                        isLoading = false;
+                    });
                 }
             }
 
             @Override
             public void onError(String errorMessage) {
-                getActivity().runOnUiThread(() -> 
-                        Toast.makeText(getContext(), "Ошибка загрузки контента: " + errorMessage, Toast.LENGTH_SHORT).show()
-                );
+                getActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Ошибка загрузки контента: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    isLoading = false;
+                });
             }
+        });
+    }
+    
+    /**
+     * Обновляет список карточек после загрузки данных из API
+     */
+    private void refreshCardsAfterApiLoad() {
+        // Сбрасываем сессионную историю перемешивания
+        com.draker.swipetime.utils.ContentShuffler.resetSessionHistory(categoryName);
+        
+        if (getActivity() == null) return;
+        
+        getActivity().runOnUiThread(() -> {
+            // Получаем текущее количество карточек
+            int currentCardCount = adapter.getItemCount();
+            
+            // Получаем свежие данные с применением фильтров
+            String userId = getCurrentUserId();
+            List<ContentItem> freshItems = CardFilterIntegrator.getFilteredContentItems(
+                    categoryName,
+                    userId,
+                    movieRepository,
+                    tvShowRepository,
+                    gameRepository,
+                    bookRepository,
+                    animeRepository,
+                    contentRepository,
+                    preferencesRepository
+            );
+            
+            Log.d(TAG, "Получено свежих элементов после загрузки API: " + freshItems.size());
+            
+            // Фильтруем только новые элементы, которых нет в текущем адаптере
+            List<ContentItem> newItems = new ArrayList<>();
+            Set<String> currentIds = new HashSet<>();
+            
+            // Собираем ID текущих элементов
+            for (int i = 0; i < adapter.getItemCount(); i++) {
+                currentIds.add(adapter.getItems().get(i).getId());
+            }
+            
+            // Добавляем только новые элементы
+            for (ContentItem item : freshItems) {
+                if (!currentIds.contains(item.getId())) {
+                    newItems.add(item);
+                }
+            }
+            
+            Log.d(TAG, "Новых уникальных элементов: " + newItems.size());
+            
+            if (!newItems.isEmpty()) {
+                // Перемешиваем новые элементы
+                List<ContentItem> shuffledNewItems = com.draker.swipetime.utils.ContentShuffler.shuffleContent(newItems, categoryName);
+                
+                // Добавляем новые элементы в адаптер
+                adapter.addItems(shuffledNewItems);
+                
+                // Отображаем сообщение
+                Toast.makeText(getContext(), "Добавлено " + shuffledNewItems.size() + " новых элементов", Toast.LENGTH_SHORT).show();
+                
+                // Показываем карточки, если они были скрыты
+                if (cardStackView.getVisibility() != View.VISIBLE) {
+                    cardStackView.setVisibility(View.VISIBLE);
+                    emptyCardsContainer.setVisibility(View.GONE);
+                }
+            } else {
+                // Если нет новых элементов, отображаем сообщение
+                Toast.makeText(getContext(), "Нет новых элементов для отображения", Toast.LENGTH_SHORT).show();
+            }
+            
+            isLoading = false;
         });
     }
 
@@ -465,6 +532,10 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         }
     }
 
+    /**
+     * Обработка свайпа карточки
+     * @param direction направление свайпа
+     */
     @Override
     public void onCardSwiped(Direction direction) {
         // Обработка свайпа карточки
@@ -474,6 +545,9 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             Log.d(TAG, "Выполнен свайп карточки: " + item.getTitle() + " (ID: " + item.getId() + ", категория: " + categoryName + ")");
 
             String userId = getCurrentUserId();
+            
+            // Отмечаем элемент как показанный в ContentShuffler
+            com.draker.swipetime.utils.ContentShuffler.markContentAsPermanentlyShown(categoryName, item.getId());
             
             if (direction == Direction.Right) {
                 // Пользователю понравился элемент
@@ -512,16 +586,68 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                     // Синхронизация информации о пользователе при повышении уровня
                     syncUserProfileWithFirebase(userId);
                 }
+                
+                // Удаляем из базы данных неинтересный контент, чтобы не повторялся
+                removeUnlikedContent(item);
             }
+            
+            // Удаляем карточку из адаптера, чтобы избежать повторений
+            adapter.removeItem(position);
         } else {
             Log.e(TAG, "Ошибка позиции при свайпе: position=" + position + ", размер адаптера=" + adapter.getItemCount());
         }
 
+        // Если карточки заканчиваются, подгружаем еще
+        if (manager.getTopPosition() >= adapter.getItemCount() - 3) {
+            // Подгружаем дополнительные карточки
+            loadAdditionalContentFromApi();
+        }
+        
         // Если карточки закончились, показываем сообщение
         if (manager.getTopPosition() == adapter.getItemCount()) {
             cardStackView.setVisibility(View.GONE);
             emptyCardsContainer.setVisibility(View.VISIBLE);
         }
+    }
+    
+    /**
+     * Удаляет неинтересный контент из базы данных
+     * @param item элемент контента
+     */
+    private void removeUnlikedContent(ContentItem item) {
+        if (item == null || item.getId() == null) {
+            return;
+        }
+        
+        // Запуск в отдельном потоке для избежания блокировки UI
+        new Thread(() -> {
+            try {
+                switch (categoryName.toLowerCase()) {
+                    case "фильмы":
+                        movieRepository.deleteById(item.getId());
+                        break;
+                    case "сериалы":
+                        tvShowRepository.deleteById(item.getId());
+                        break;
+                    case "игры":
+                        gameRepository.deleteById(item.getId());
+                        break;
+                    case "книги":
+                        bookRepository.deleteById(item.getId());
+                        break;
+                    case "аниме":
+                        animeRepository.deleteById(item.getId());
+                        break;
+                    default:
+                        contentRepository.deleteById(item.getId());
+                        break;
+                }
+                
+                Log.d(TAG, "Удален элемент из базы данных: " + item.getTitle() + " (ID: " + item.getId() + ")");
+            } catch (Exception e) {
+                Log.e(TAG, "Ошибка при удалении элемента: " + e.getMessage());
+            }
+        }).start();
     }
     
     /**

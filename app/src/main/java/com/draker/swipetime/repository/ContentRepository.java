@@ -47,11 +47,14 @@ public class ContentRepository {
     }
 
     /**
-     * Удалить контент
-     * @param content контент
+     * Удалить контент по ID
+     * @param id ID контента
      */
-    public void delete(ContentEntity content) {
-        contentDao.delete(content);
+    public void deleteById(String id) {
+        ContentEntity content = contentDao.getById(id);
+        if (content != null) {
+            contentDao.delete(content);
+        }
     }
 
     /**

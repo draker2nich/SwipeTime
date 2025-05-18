@@ -9,6 +9,7 @@ import com.draker.swipetime.api.repositories.RawgRepository;
 import com.draker.swipetime.api.repositories.TMDbRepository;
 import com.draker.swipetime.database.entities.AnimeEntity;
 import com.draker.swipetime.database.entities.BookEntity;
+import com.draker.swipetime.database.entities.ContentEntity;
 import com.draker.swipetime.database.entities.GameEntity;
 import com.draker.swipetime.database.entities.MovieEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
@@ -18,6 +19,7 @@ import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -43,6 +45,9 @@ public class ApiManager {
     private final AnimeRepository animeRepository;
 
     private final CompositeDisposable disposables = new CompositeDisposable();
+    
+    // Добавляем ApiDataManager для управления уникальными данными
+    private final ApiDataManager apiDataManager;
 
     /**
      * Интерфейс для обратного вызова после загрузки данных
@@ -67,6 +72,9 @@ public class ApiManager {
         gameRepository = new GameRepository(application);
         bookRepository = new BookRepository(application);
         animeRepository = new AnimeRepository(application);
+        
+        // Инициализируем ApiDataManager
+        apiDataManager = ApiDataManager.getInstance();
     }
 
     /**
@@ -75,16 +83,37 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void loadPopularMovies(int page, ApiCallback<MovieEntity> callback) {
-        Disposable disposable = tmdbRepository.getPopularMovies(page)
+        // Получаем номер страницы для загрузки
+        if (page <= 0) {
+            page = apiDataManager.getNextPageToken("movie");
+        } else {
+            apiDataManager.setNextPageToken("movie", page + 1);
+        }
+        
+        final int pageToLoad = page;
+        Log.d(TAG, "Загрузка популярных фильмов: страница " + pageToLoad);
+        
+        Disposable disposable = tmdbRepository.getPopularMovies(pageToLoad)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         movies -> {
+                            // Фильтруем уже загруженные фильмы
+                            List<MovieEntity> uniqueMovies = apiDataManager.filterAlreadyLoaded("movie", movies);
+                            
+                            if (uniqueMovies.isEmpty()) {
+                                // Если нет новых фильмов, загружаем следующую страницу
+                                Log.d(TAG, "Нет новых фильмов на странице " + pageToLoad + ", пробуем следующую");
+                                loadPopularMovies(pageToLoad + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (MovieEntity movie : movies) {
+                            for (MovieEntity movie : uniqueMovies) {
                                 movieRepository.insert(movie);
                             }
-                            callback.onSuccess(movies);
+                            
+                            callback.onSuccess(uniqueMovies);
                         },
                         error -> {
                             Log.e(TAG, "Error loading popular movies: " + error.getMessage());
@@ -100,16 +129,37 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void loadPopularTVShows(int page, ApiCallback<TVShowEntity> callback) {
-        Disposable disposable = tmdbRepository.getPopularTVShows(page)
+        // Получаем номер страницы для загрузки
+        if (page <= 0) {
+            page = apiDataManager.getNextPageToken("tv_show");
+        } else {
+            apiDataManager.setNextPageToken("tv_show", page + 1);
+        }
+        
+        final int pageToLoad = page;
+        Log.d(TAG, "Загрузка популярных сериалов: страница " + pageToLoad);
+        
+        Disposable disposable = tmdbRepository.getPopularTVShows(pageToLoad)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         tvShows -> {
+                            // Фильтруем уже загруженные сериалы
+                            List<TVShowEntity> uniqueTVShows = apiDataManager.filterAlreadyLoaded("tv_show", tvShows);
+                            
+                            if (uniqueTVShows.isEmpty()) {
+                                // Если нет новых сериалов, загружаем следующую страницу
+                                Log.d(TAG, "Нет новых сериалов на странице " + pageToLoad + ", пробуем следующую");
+                                loadPopularTVShows(pageToLoad + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (TVShowEntity tvShow : tvShows) {
+                            for (TVShowEntity tvShow : uniqueTVShows) {
                                 tvShowRepository.insert(tvShow);
                             }
-                            callback.onSuccess(tvShows);
+                            
+                            callback.onSuccess(uniqueTVShows);
                         },
                         error -> {
                             Log.e(TAG, "Error loading popular TV shows: " + error.getMessage());
@@ -125,16 +175,37 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void loadPopularGames(int page, ApiCallback<GameEntity> callback) {
-        Disposable disposable = rawgRepository.getPopularGames(page)
+        // Получаем номер страницы для загрузки
+        if (page <= 0) {
+            page = apiDataManager.getNextPageToken("game");
+        } else {
+            apiDataManager.setNextPageToken("game", page + 1);
+        }
+        
+        final int pageToLoad = page;
+        Log.d(TAG, "Загрузка популярных игр: страница " + pageToLoad);
+        
+        Disposable disposable = rawgRepository.getPopularGames(pageToLoad)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         games -> {
+                            // Фильтруем уже загруженные игры
+                            List<GameEntity> uniqueGames = apiDataManager.filterAlreadyLoaded("game", games);
+                            
+                            if (uniqueGames.isEmpty()) {
+                                // Если нет новых игр, загружаем следующую страницу
+                                Log.d(TAG, "Нет новых игр на странице " + pageToLoad + ", пробуем следующую");
+                                loadPopularGames(pageToLoad + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (GameEntity game : games) {
+                            for (GameEntity game : uniqueGames) {
                                 gameRepository.insert(game);
                             }
-                            callback.onSuccess(games);
+                            
+                            callback.onSuccess(uniqueGames);
                         },
                         error -> {
                             Log.e(TAG, "Error loading popular games: " + error.getMessage());
@@ -151,30 +222,49 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void searchBooks(String query, int page, ApiCallback<BookEntity> callback) {
+        // Получаем номер страницы для загрузки
+        if (page <= 0) {
+            page = apiDataManager.getNextPageToken("book");
+        } else {
+            apiDataManager.setNextPageToken("book", page + 1);
+        }
+        
+        final int pageToLoad = page;
+        Log.d(TAG, "Поиск книг по запросу '" + query + "': страница " + pageToLoad);
+        
         // Сначала пробуем с API ключом
-        Disposable disposable = googleBooksRepository.searchBooks(query, page)
+        Disposable disposable = googleBooksRepository.searchBooks(query, pageToLoad)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         books -> {
                             if (books != null && !books.isEmpty()) {
-                                // Если успешно получили книги с ключом
-                                Log.d(TAG, "Successfully retrieved " + books.size() + " books with API key");
+                                // Фильтруем уже загруженные книги
+                                List<BookEntity> uniqueBooks = apiDataManager.filterAlreadyLoaded("book", books);
+                                
+                                if (uniqueBooks.isEmpty()) {
+                                    // Если нет новых книг, загружаем следующую страницу
+                                    Log.d(TAG, "Нет новых книг на странице " + pageToLoad + ", пробуем следующую");
+                                    searchBooks(query, pageToLoad + 1, callback);
+                                    return;
+                                }
+                                
                                 // Сохраняем в базу данных
-                                for (BookEntity book : books) {
+                                for (BookEntity book : uniqueBooks) {
                                     bookRepository.insert(book);
                                 }
-                                callback.onSuccess(books);
+                                
+                                callback.onSuccess(uniqueBooks);
                             } else {
                                 // Если не получили книги с ключом, пробуем без ключа
                                 Log.d(TAG, "No books found with API key, trying without key");
-                                trySearchBooksWithoutKey(query, page, callback);
+                                trySearchBooksWithoutKey(query, pageToLoad, callback);
                             }
                         },
                         error -> {
                             Log.e(TAG, "Error searching books with API key: " + error.getMessage());
                             // В случае ошибки пробуем без ключа
-                            trySearchBooksWithoutKey(query, page, callback);
+                            trySearchBooksWithoutKey(query, pageToLoad, callback);
                         }
                 );
         disposables.add(disposable);
@@ -189,11 +279,22 @@ public class ApiManager {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         books -> {
+                            // Фильтруем уже загруженные книги
+                            List<BookEntity> uniqueBooks = apiDataManager.filterAlreadyLoaded("book", books);
+                            
+                            if (uniqueBooks.isEmpty() && !books.isEmpty()) {
+                                // Если были книги, но все уже загружены, пробуем следующую страницу
+                                Log.d(TAG, "Нет новых книг без ключа на странице " + page + ", пробуем следующую");
+                                searchBooks(query, page + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (BookEntity book : books) {
+                            for (BookEntity book : uniqueBooks) {
                                 bookRepository.insert(book);
                             }
-                            callback.onSuccess(books);
+                            
+                            callback.onSuccess(uniqueBooks);
                         },
                         error -> {
                             Log.e(TAG, "Error searching books without API key: " + error.getMessage());
@@ -209,16 +310,37 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void loadTopAnime(int page, ApiCallback<AnimeEntity> callback) {
-        Disposable disposable = jikanRepository.getTopAnime(page)
+        // Получаем номер страницы для загрузки
+        if (page <= 0) {
+            page = apiDataManager.getNextPageToken("anime");
+        } else {
+            apiDataManager.setNextPageToken("anime", page + 1);
+        }
+        
+        final int pageToLoad = page;
+        Log.d(TAG, "Загрузка топ аниме: страница " + pageToLoad);
+        
+        Disposable disposable = jikanRepository.getTopAnime(pageToLoad)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         animeList -> {
+                            // Фильтруем уже загруженные аниме
+                            List<AnimeEntity> uniqueAnime = apiDataManager.filterAlreadyLoaded("anime", animeList);
+                            
+                            if (uniqueAnime.isEmpty()) {
+                                // Если нет новых аниме, загружаем следующую страницу
+                                Log.d(TAG, "Нет нового аниме на странице " + pageToLoad + ", пробуем следующую");
+                                loadTopAnime(pageToLoad + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (AnimeEntity anime : animeList) {
+                            for (AnimeEntity anime : uniqueAnime) {
                                 animeRepository.insert(anime);
                             }
-                            callback.onSuccess(animeList);
+                            
+                            callback.onSuccess(uniqueAnime);
                         },
                         error -> {
                             Log.e(TAG, "Error loading top anime: " + error.getMessage());
@@ -235,16 +357,29 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void searchMovies(String query, int page, ApiCallback<MovieEntity> callback) {
+        Log.d(TAG, "Поиск фильмов по запросу '" + query + "': страница " + page);
+        
         Disposable disposable = tmdbRepository.searchMovies(query, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         movies -> {
+                            // Фильтруем уже загруженные фильмы
+                            List<MovieEntity> uniqueMovies = apiDataManager.filterAlreadyLoaded("movie", movies);
+                            
+                            if (uniqueMovies.isEmpty() && !movies.isEmpty()) {
+                                // Если были фильмы, но все уже загружены, пробуем следующую страницу
+                                Log.d(TAG, "Нет новых фильмов в поиске на странице " + page + ", пробуем следующую");
+                                searchMovies(query, page + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (MovieEntity movie : movies) {
+                            for (MovieEntity movie : uniqueMovies) {
                                 movieRepository.insert(movie);
                             }
-                            callback.onSuccess(movies);
+                            
+                            callback.onSuccess(uniqueMovies);
                         },
                         error -> {
                             Log.e(TAG, "Error searching movies: " + error.getMessage());
@@ -261,16 +396,29 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void searchTVShows(String query, int page, ApiCallback<TVShowEntity> callback) {
+        Log.d(TAG, "Поиск сериалов по запросу '" + query + "': страница " + page);
+        
         Disposable disposable = tmdbRepository.searchTVShows(query, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         tvShows -> {
+                            // Фильтруем уже загруженные сериалы
+                            List<TVShowEntity> uniqueTVShows = apiDataManager.filterAlreadyLoaded("tv_show", tvShows);
+                            
+                            if (uniqueTVShows.isEmpty() && !tvShows.isEmpty()) {
+                                // Если были сериалы, но все уже загружены, пробуем следующую страницу
+                                Log.d(TAG, "Нет новых сериалов в поиске на странице " + page + ", пробуем следующую");
+                                searchTVShows(query, page + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (TVShowEntity tvShow : tvShows) {
+                            for (TVShowEntity tvShow : uniqueTVShows) {
                                 tvShowRepository.insert(tvShow);
                             }
-                            callback.onSuccess(tvShows);
+                            
+                            callback.onSuccess(uniqueTVShows);
                         },
                         error -> {
                             Log.e(TAG, "Error searching TV shows: " + error.getMessage());
@@ -287,16 +435,29 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void searchGames(String query, int page, ApiCallback<GameEntity> callback) {
+        Log.d(TAG, "Поиск игр по запросу '" + query + "': страница " + page);
+        
         Disposable disposable = rawgRepository.searchGames(query, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         games -> {
+                            // Фильтруем уже загруженные игры
+                            List<GameEntity> uniqueGames = apiDataManager.filterAlreadyLoaded("game", games);
+                            
+                            if (uniqueGames.isEmpty() && !games.isEmpty()) {
+                                // Если были игры, но все уже загружены, пробуем следующую страницу
+                                Log.d(TAG, "Нет новых игр в поиске на странице " + page + ", пробуем следующую");
+                                searchGames(query, page + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (GameEntity game : games) {
+                            for (GameEntity game : uniqueGames) {
                                 gameRepository.insert(game);
                             }
-                            callback.onSuccess(games);
+                            
+                            callback.onSuccess(uniqueGames);
                         },
                         error -> {
                             Log.e(TAG, "Error searching games: " + error.getMessage());
@@ -313,16 +474,29 @@ public class ApiManager {
      * @param callback обратный вызов с результатом
      */
     public void searchAnime(String query, int page, ApiCallback<AnimeEntity> callback) {
+        Log.d(TAG, "Поиск аниме по запросу '" + query + "': страница " + page);
+        
         Disposable disposable = jikanRepository.searchAnime(query, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         animeList -> {
+                            // Фильтруем уже загруженные аниме
+                            List<AnimeEntity> uniqueAnime = apiDataManager.filterAlreadyLoaded("anime", animeList);
+                            
+                            if (uniqueAnime.isEmpty() && !animeList.isEmpty()) {
+                                // Если был аниме, но все уже загружены, пробуем следующую страницу
+                                Log.d(TAG, "Нет нового аниме в поиске на странице " + page + ", пробуем следующую");
+                                searchAnime(query, page + 1, callback);
+                                return;
+                            }
+                            
                             // Сохраняем в базу данных
-                            for (AnimeEntity anime : animeList) {
+                            for (AnimeEntity anime : uniqueAnime) {
                                 animeRepository.insert(anime);
                             }
-                            callback.onSuccess(animeList);
+                            
+                            callback.onSuccess(uniqueAnime);
                         },
                         error -> {
                             Log.e(TAG, "Error searching anime: " + error.getMessage());
@@ -393,6 +567,25 @@ public class ApiManager {
                 callback.onError(new IllegalArgumentException("Unknown category: " + category));
                 break;
         }
+    }
+    
+    /**
+     * Сбросить кеш загруженных элементов для определенной категории
+     * @param category категория контента
+     */
+    public void resetCategoryCache(String category) {
+        apiDataManager.resetLoadedItems(category);
+        apiDataManager.resetPageToken(category);
+        Log.d(TAG, "Сброшен кеш для категории: " + category);
+    }
+    
+    /**
+     * Сбросить все кеши загруженных элементов
+     */
+    public void resetAllCaches() {
+        apiDataManager.resetAllLoadedItems();
+        apiDataManager.resetAllPageTokens();
+        Log.d(TAG, "Сброшены все кеши");
     }
 
     /**
