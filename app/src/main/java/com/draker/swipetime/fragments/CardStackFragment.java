@@ -43,6 +43,7 @@ import com.draker.swipetime.utils.FirestoreDataManager;
 import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.LikedItemsHelper;
+import com.draker.swipetime.utils.PersistentFavoritesManager;
 import com.draker.swipetime.viewmodels.FilterViewModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -719,6 +720,11 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                         movieRepository, tvShowRepository,
                         gameRepository, bookRepository,
                         animeRepository, contentRepository);
+                        
+                // Сохраняем в постоянную память избранное
+                com.draker.swipetime.utils.PersistentFavoritesManager favManager = 
+                    new com.draker.swipetime.utils.PersistentFavoritesManager(requireContext());
+                favManager.addToFavorites(item.getId());
 
                 // Начисляем опыт за свайп вправо
                 boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);

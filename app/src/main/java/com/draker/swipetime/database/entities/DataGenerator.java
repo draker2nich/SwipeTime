@@ -1,11 +1,16 @@
 package com.draker.swipetime.database.entities;
 
 /**
- * This class has been deprecated.
+ * This class has been deprecated and removed.
  * Please use com.draker.swipetime.database.DataGenerator instead.
- * This file is kept only to resolve compile-time issues.
+ * @deprecated Use com.draker.swipetime.database.DataGenerator
  */
+@Deprecated
 public class DataGenerator {
-    // Этот класс был перенесен в пакет com.draker.swipetime.database
-    // Используйте com.draker.swipetime.database.DataGenerator 
+    private DataGenerator() {
+        // Private constructor to prevent instantiation
+    }
+    
+    // This class should not be used. 
+    // Refer to com.draker.swipetime.database.DataGenerator instead
 }

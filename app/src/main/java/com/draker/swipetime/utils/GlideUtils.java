@@ -61,6 +61,36 @@ public class GlideUtils {
             imageView.setImageResource(getCategoryPlaceholderResource(category));
         }
     }
+    
+    /**
+     * Загружает изображение для детального просмотра контента
+     * @param context контекст приложения
+     * @param imageUrl URL изображения
+     * @param imageView целевое представление
+     * @param category категория контента (для выбора подходящей заглушки)
+     */
+    public static void loadDetailContentImage(Context context, String imageUrl, ImageView imageView, String category) {
+        // Проверяем наличие URL
+        if (imageUrl == null || imageUrl.isEmpty() || imageUrl.equals("url_to_image")) {
+            // Выбираем заглушку в зависимости от категории
+            int placeholderResId = getCategoryPlaceholderResource(category);
+            imageView.setImageResource(placeholderResId);
+            return;
+        }
+
+        try {
+            // Загружаем изображение с детальными настройками для высокого качества
+            Glide.with(context)
+                .load(imageUrl)
+                .placeholder(getCategoryPlaceholderResource(category))
+                .error(getCategoryPlaceholderResource(category))
+                .fitCenter() // Используем fitCenter вместо centerCrop для полного отображения
+                .into(imageView);
+        } catch (Exception e) {
+            // Устанавливаем заглушку в случае ошибки
+            imageView.setImageResource(getCategoryPlaceholderResource(category));
+        }
+    }
 
     /**
      * Возвращает ресурс заглушки в зависимости от категории контента

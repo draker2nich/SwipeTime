@@ -155,6 +155,12 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
             List<MovieEntity> likedMovies = movieRepository.getLiked();
             Log.d(TAG, "Загружено избранных фильмов: " + likedMovies.size());
             for (MovieEntity movie : likedMovies) {
+                // Пропускаем тестовые элементы
+                if (movie.getId().startsWith("test_")) {
+                    Log.d(TAG, "Пропускаем тестовый фильм: " + movie.getTitle());
+                    continue;
+                }
+                
                 ContentItem item = new ContentItem(
                     movie.getId(),
                     movie.getTitle(),
@@ -212,6 +218,12 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
             List<TVShowEntity> likedTVShows = tvShowRepository.getLiked();
             Log.d(TAG, "Загружено избранных сериалов: " + likedTVShows.size());
             for (TVShowEntity tvShow : likedTVShows) {
+                // Пропускаем тестовые элементы
+                if (tvShow.getId().startsWith("test_")) {
+                    Log.d(TAG, "Пропускаем тестовый сериал: " + tvShow.getTitle());
+                    continue;
+                }
+                
                 ContentItem item = new ContentItem(
                     tvShow.getId(),
                     tvShow.getTitle(),
@@ -277,6 +289,12 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
             List<GameEntity> likedGames = gameRepository.getLiked();
             Log.d(TAG, "Загружено избранных игр: " + likedGames.size());
             for (GameEntity game : likedGames) {
+                // Пропускаем тестовые элементы
+                if (game.getId().startsWith("test_")) {
+                    Log.d(TAG, "Пропускаем тестовую игру: " + game.getTitle());
+                    continue;
+                }
+                
                 ContentItem item = new ContentItem(
                     game.getId(),
                     game.getTitle(),
@@ -344,6 +362,12 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
             List<BookEntity> likedBooks = bookRepository.getLiked();
             Log.d(TAG, "Загружено избранных книг: " + likedBooks.size());
             for (BookEntity book : likedBooks) {
+                // Пропускаем тестовые элементы
+                if (book.getId().startsWith("test_")) {
+                    Log.d(TAG, "Пропускаем тестовую книгу: " + book.getTitle());
+                    continue;
+                }
+                
                 ContentItem item = new ContentItem(
                     book.getId(),
                     book.getTitle(),
@@ -421,6 +445,12 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
             List<AnimeEntity> likedAnimes = animeRepository.getLiked();
             Log.d(TAG, "Загружено избранных аниме: " + likedAnimes.size());
             for (AnimeEntity anime : likedAnimes) {
+                // Пропускаем тестовые элементы
+                if (anime.getId().startsWith("test_")) {
+                    Log.d(TAG, "Пропускаем тестовое аниме: " + anime.getTitle());
+                    continue;
+                }
+                
                 ContentItem item = new ContentItem(
                     anime.getId(),
                     anime.getTitle(),
@@ -494,6 +524,12 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
             }
             
             for (ContentEntity content : likedContent) {
+                // Пропускаем тестовые элементы
+                if (content.getId().startsWith("test_")) {
+                    Log.d(TAG, "Пропускаем тестовый контент: " + content.getTitle());
+                    continue;
+                }
+                
                 // Проверка на дубликат должна учитывать ID и категорию контента
                 boolean alreadyAdded = false;
                 for (ContentItem item : likedItems) {
@@ -546,11 +582,7 @@ public class LikedContentFragment extends Fragment implements ImprovedLikedConte
                 recyclerView.setVisibility(View.GONE);
                 emptyMessageTextView.setVisibility(View.VISIBLE);
                 Log.d(TAG, "Список избранного пуст");
-                
-                // Если список пуст, добавляем тестовые данные для демонстрации
-                addTestLikedData();
-                // И загружаем их снова
-                loadLikedContent();
+                // Больше не добавляем тестовые данные, просто показываем сообщение
             } else {
                 recyclerView.setVisibility(View.VISIBLE);
                 emptyMessageTextView.setVisibility(View.GONE);

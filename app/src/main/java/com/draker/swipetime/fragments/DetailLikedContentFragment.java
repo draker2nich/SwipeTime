@@ -145,8 +145,23 @@ public class DetailLikedContentFragment extends Fragment {
             loadReviewData();
         }
         
+        // Проверка ориентации экрана и корректировка UI для ландшафтной ориентации
+        adjustUIForScreenOrientation();
+        
         // Установка слушателей
         setupListeners();
+    }
+    
+    /**
+     * Корректирует UI для различных ориентаций экрана
+     */
+    private void adjustUIForScreenOrientation() {
+        if (getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            // В ландшафтной ориентации изменяем размер изображения
+            ViewGroup.LayoutParams params = coverImageView.getLayoutParams();
+            params.height = getResources().getDimensionPixelSize(R.dimen.cover_height_landscape);
+            coverImageView.setLayoutParams(params);
+        }
     }
 
     /**
@@ -159,7 +174,21 @@ public class DetailLikedContentFragment extends Fragment {
         descriptionTextView = view.findViewById(R.id.description_detail);
         watchedSwitch = view.findViewById(R.id.watched_switch);
         watchedLabel = view.findViewById(R.id.watched_label);
-        ratingBar = view.findViewById(R.id.rating_bar);
+        
+        // Находим рейтинг бар внутри его родительской карточки
+        View ratingCardView = view.findViewById(R.id.rating_card);
+        if (ratingCardView != null) {
+            ratingBar = ratingCardView.findViewById(R.id.rating_bar);
+        } else {
+            // Если не нашли карточку, попробуем найти рейтинг бар напрямую
+            ratingBar = view.findViewById(R.id.rating_bar);
+            Log.w(TAG, "Не найдена rating_card, пытаемся найти rating_bar напрямую");
+        }
+        
+        if (ratingBar == null) {
+            Log.e(TAG, "ОШИБКА: Не удалось найти рейтинг бар!");
+        }
+        
         ratingValueTextView = view.findViewById(R.id.rating_value);
         reviewEditText = view.findViewById(R.id.review_edit_text);
         saveReviewButton = view.findViewById(R.id.save_review_button);
@@ -184,8 +213,26 @@ public class DetailLikedContentFragment extends Fragment {
         categoryTextView.setText(contentItem.getCategory());
         descriptionTextView.setText(contentItem.getDescription());
         
-        // Настройка изображения (в реальном приложении здесь будет загрузка изображения)
-        coverImageView.setImageResource(R.drawable.placeholder_image);
+        // Используем GlideUtils для загрузки изображения
+        try {
+            if (contentItem.getImageUrl() != null && !contentItem.getImageUrl().isEmpty()) {
+                com.draker.swipetime.utils.GlideUtils.loadDetailContentImage(
+                    requireContext(), 
+                    contentItem.getImageUrl(), 
+                    coverImageView,
+                    contentItem.getCategory()
+                );
+                Log.d(TAG, "Загружено изображение: " + contentItem.getImageUrl());
+            } else {
+                // Если нет URL изображения, используем placeholder
+                coverImageView.setImageResource(R.drawable.placeholder_image);
+                Log.d(TAG, "Установлено placeholder-изображение, так как URL отсутствует");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Ошибка при загрузке изображения: " + e.getMessage());
+            // Используем placeholder в случае ошибки
+            coverImageView.setImageResource(R.drawable.placeholder_image);
+        }
         
         // Обновляем заголовок тулбара
         toolbar.setTitle(contentItem.getTitle());
@@ -193,6 +240,25 @@ public class DetailLikedContentFragment extends Fragment {
         // Обновляем текст переключателя в зависимости от типа контента
         String switchLabel = LikedItemsHelper.getWatchedSwitchLabel(contentItem.getCategory(), requireContext());
         watchedLabel.setText(switchLabel);
+        
+        // Устанавливаем начальное состояние переключателя
+        watchedSwitch.setChecked(contentItem.isWatched());
+        
+        // Если есть рейтинг, устанавливаем его
+        if (contentItem.getRating() > 0) {
+            float rating = contentItem.getRating();
+            // Если рейтинг по 10-балльной шкале, преобразуем в 5-балльную для UI
+            if (rating > 5) {
+                rating = rating / 2;
+            }
+            ratingBar.setRating(rating);
+            updateRatingValueText(rating);
+        }
+        
+        // Если есть отзыв, устанавливаем его
+        if (contentItem.getReview() != null && !contentItem.getReview().isEmpty()) {
+            reviewEditText.setText(contentItem.getReview());
+        }
     }
 
     /**
@@ -205,8 +271,13 @@ public class DetailLikedContentFragment extends Fragment {
             
             if (currentReview != null) {
                 // Если отзыв найден, заполняем UI
-                ratingBar.setRating(currentReview.getRating());
-                updateRatingValueText(currentReview.getRating());
+                // Преобразуем рейтинг из 10-балльной шкалы в 5-балльную, если он больше 5
+                float displayRating = currentReview.getRating();
+                if (displayRating > 5) {
+                    displayRating = displayRating / 2;
+                }
+                ratingBar.setRating(displayRating);
+                updateRatingValueText(displayRating);
                 reviewEditText.setText(currentReview.getText());
 
                 // Определяем статус "просмотрено" в зависимости от категории контента
@@ -229,7 +300,7 @@ public class DetailLikedContentFragment extends Fragment {
      * Установка слушателей для UI элементов
      */
     private void setupListeners() {
-        // Обновление текстового значения при изменении рейтинга
+        // Обновление текстового представления рейтинга
         ratingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
             updateRatingValueText(rating);
         });
@@ -242,7 +313,12 @@ public class DetailLikedContentFragment extends Fragment {
      * Обновление текстового представления рейтинга
      */
     private void updateRatingValueText(float rating) {
-        ratingValueTextView.setText(String.format("%.1f", rating));
+        // Преобразуем обратно в 10-балльную шкалу для отображения
+        float displayRating = rating;
+        if (rating <= 5) {
+            displayRating = rating * 2;
+        }
+        ratingValueTextView.setText(String.format("%.1f", displayRating));
     }
 
     /**
@@ -251,11 +327,14 @@ public class DetailLikedContentFragment extends Fragment {
     private void saveReview() {
         try {
             float rating = ratingBar.getRating();
+            // Преобразуем рейтинг из 5-балльной шкалы в 10-балльную для сохранения в базе
+            float databaseRating = rating * 2; // Рейтинг для сохранения в базе данных (10-балльная шкала)
+            
             String reviewText = reviewEditText.getText() != null ? reviewEditText.getText().toString() : "";
             boolean isWatched = watchedSwitch.isChecked();
             
             // Логируем действия пользователя
-            ActionLogger.logRating(contentItem.getId(), contentItem.getTitle(), rating);
+            ActionLogger.logRating(contentItem.getId(), contentItem.getTitle(), databaseRating);
             
             if (!reviewText.isEmpty()) {
                 ActionLogger.logReview(contentItem.getId(), contentItem.getTitle());
@@ -267,7 +346,7 @@ public class DetailLikedContentFragment extends Fragment {
             
             // Начисляем опыт за оценку, если рейтинг > 0
             if (rating > 0) {
-                addExperienceForRating(rating);
+                addExperienceForRating(databaseRating);
             }
             
             // Начисляем опыт за рецензию, если она не пустая
@@ -280,7 +359,7 @@ public class DetailLikedContentFragment extends Fragment {
                 currentReview = new ReviewEntity(
                     currentUserId,
                     contentItem.getId(),
-                    rating,
+                    databaseRating,
                     reviewText,
                     contentItem.getCategory()
                 );
@@ -289,7 +368,7 @@ public class DetailLikedContentFragment extends Fragment {
                 currentReview.setId(reviewId);
             } else {
                 // Обновляем существующий отзыв
-                currentReview.setRating(rating);
+                currentReview.setRating(databaseRating);
                 currentReview.setText(reviewText);
                 reviewRepository.update(currentReview);
             }

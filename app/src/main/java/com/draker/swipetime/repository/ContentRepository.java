@@ -1,6 +1,7 @@
 package com.draker.swipetime.repository;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
@@ -19,6 +20,15 @@ public class ContentRepository {
 
     public ContentRepository(Application application) {
         AppDatabase db = AppDatabase.getInstance(application);
+        contentDao = db.contentDao();
+    }
+    
+    /**
+     * Конструктор, принимающий Context
+     * @param context контекст приложения
+     */
+    public ContentRepository(android.content.Context context) {
+        AppDatabase db = AppDatabase.getInstance(context);
         contentDao = db.contentDao();
     }
 
@@ -209,9 +219,35 @@ public class ContentRepository {
     public void updateOrInsert(ContentEntity content) {
         ContentEntity existingContent = contentDao.getById(content.getId());
         if (existingContent != null) {
+            // Сохраняем значение liked из существующего контента,
+            // если оно было установлено в true
+            if (existingContent.isLiked()) {
+                content.setLiked(true);
+            }
             update(content);
         } else {
             insert(content);
+        }
+    }
+    
+    /**
+     * Обновляет только статус "понравилось" для контента
+     * и гарантирует, что изменения сохраняются
+     * @param id ID контента
+     * @param liked новый статус
+     * @return true если обновление успешно, false в противном случае
+     */
+    public boolean updateAndPersistLikedStatus(String id, boolean liked) {
+        try {
+            // Обновляем статус и устанавливаем метку времени обновления
+            contentDao.updateLikedStatus(id, liked);
+            
+            // Проверяем, что обновление прошло успешно
+            ContentEntity content = contentDao.getById(id);
+            return content != null && content.isLiked() == liked;
+        } catch (Exception e) {
+            Log.e("ContentRepository", "Ошибка при обновлении статуса 'понравилось': " + e.getMessage());
+            return false;
         }
     }
 }
