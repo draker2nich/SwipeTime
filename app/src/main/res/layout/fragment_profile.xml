@@ -322,6 +322,36 @@
 
             </LinearLayout>
 
+            <!-- Кнопка для принудительной инициализации достижений -->
+            <Button
+                android:id="@+id/initialize_achievements_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Инициализировать достижения"
+                android:layout_marginTop="8dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="@color/accent_purple_light" />
+
+            <!-- Кнопка диагностики -->
+            <Button
+                android:id="@+id/diagnostics_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Диагностика достижений"
+                android:layout_marginTop="4dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="@color/accent_purple_light" />
+
+            <!-- Кнопка принудительной синхронизации -->
+            <Button
+                android:id="@+id/force_sync_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Принудительная синхронизация"
+                android:layout_marginTop="4dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="@color/accent_purple_light" />
+
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>

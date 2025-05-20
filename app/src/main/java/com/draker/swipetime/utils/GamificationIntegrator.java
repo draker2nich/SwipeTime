@@ -271,6 +271,8 @@ public class GamificationIntegrator {
         }
         
         // Инициализируем менеджер геймификации и настраиваем уведомления
+        GamificationManager gamificationManager = GamificationManager.getInstance(context);
+        gamificationManager.ensureAchievementsExist();
         setupAchievementListener(context);
     }
     

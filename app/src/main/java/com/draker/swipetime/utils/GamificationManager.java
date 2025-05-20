@@ -669,32 +669,37 @@ public class GamificationManager {
             UserStatsEntity stats = userStatsDao.getByUserId(userId);
             
             if (achievement != null && stats != null) {
-                int progress = 0;
+                int currentCount = 0;
                 int requiredCount = achievement.getRequiredCount();
                 
                 switch (achievement.getRequiredAction()) {
                     case ACTION_SWIPE:
-                        progress = stats.getSwipesCount();
+                        currentCount = stats.getSwipesCount();
                         break;
                     case ACTION_RATE:
-                        progress = stats.getRatingsCount();
+                        currentCount = stats.getRatingsCount();
                         break;
                     case ACTION_REVIEW:
-                        progress = stats.getReviewsCount();
+                        currentCount = stats.getReviewsCount();
                         break;
                     case ACTION_COMPLETE:
-                        progress = stats.getConsumedCount();
+                        currentCount = stats.getConsumedCount();
                         break;
                     case "total":
-                        progress = stats.getTotalActions();
+                        currentCount = stats.getTotalActions();
                         break;
                     case "streak":
-                        progress = stats.getStreakDays();
+                        currentCount = stats.getStreakDays();
                         break;
                 }
                 
                 // Рассчитываем процент выполнения
-                return Math.min(100, (progress * 100) / requiredCount);
+                int progress = Math.min(100, (currentCount * 100) / requiredCount);
+                
+                Log.d(TAG, "Прогресс достижения '" + achievement.getTitle() + "': " + 
+                      currentCount + "/" + requiredCount + " = " + progress + "%");
+                
+                return progress;
             }
         }
         
@@ -791,6 +796,16 @@ public class GamificationManager {
         
         public int getProgress() {
             return progress;
+        }
+    }
+    
+    /**
+     * Проверить и инициализировать достижения, если их нет
+     */
+    public void ensureAchievementsExist() {
+        if (achievementDao.getCount() == 0) {
+            Log.d(TAG, "Достижения отсутствуют, инициализируем...");
+            initializeAchievements();
         }
     }
     

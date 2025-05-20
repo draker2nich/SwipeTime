@@ -22,6 +22,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import android.util.Log;
+
 /**
  * Адаптер для отображения списка достижений пользователя
  */
@@ -45,6 +47,8 @@ public class AchievementsAdapter extends RecyclerView.Adapter<AchievementsAdapte
     public void onBindViewHolder(@NonNull AchievementViewHolder holder, int position) {
         GamificationManager.UserAchievementInfo achievementInfo = achievements.get(position);
         AchievementEntity achievement = achievementInfo.getAchievement();
+        
+        Log.d("AchievementsAdapter", "Привязка достижения " + position + ": " + achievement.getTitle());
         
         holder.titleText.setText(achievement.getTitle());
         holder.descriptionText.setText(achievement.getDescription());
@@ -96,7 +100,9 @@ public class AchievementsAdapter extends RecyclerView.Adapter<AchievementsAdapte
      * @param achievements новый список достижений
      */
     public void setAchievements(List<GamificationManager.UserAchievementInfo> achievements) {
+        Log.d("AchievementsAdapter", "Установка достижений в адаптер: " + achievements.size());
         this.achievements = sortAchievements(achievements);
+        Log.d("AchievementsAdapter", "После сортировки: " + this.achievements.size());
         notifyDataSetChanged();
     }
     

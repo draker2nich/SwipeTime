@@ -18,8 +18,13 @@ import androidx.lifecycle.ViewModelProvider;
 import com.draker.swipetime.R;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
+import com.draker.swipetime.fragments.AchievementsFragment;
 import com.draker.swipetime.utils.GamificationManager;
+import com.draker.swipetime.utils.AchievementInitializer;
+import com.draker.swipetime.utils.AchievementDiagnostics;
 import com.draker.swipetime.utils.XpLevelCalculator;
+
+import android.app.AlertDialog;
 import com.draker.swipetime.viewmodels.GamificationViewModel;
 import com.draker.swipetime.viewmodels.ProfileViewModel;
 
@@ -47,6 +52,9 @@ public class ProfileFragment extends Fragment {
     private Button testRatingButton;
     private Button testReviewButton;
     private Button testCompleteButton;
+    private Button initializeAchievementsButton;
+    private Button diagnosticsButton;
+    private Button forceSyncButton;
     
     // Текущий ID пользователя (в реальном приложении должен быть получен из аутентификации)
     private static final String CURRENT_USER_ID = "user_1";
@@ -96,6 +104,9 @@ public class ProfileFragment extends Fragment {
         testRatingButton = view.findViewById(R.id.test_rating_button);
         testReviewButton = view.findViewById(R.id.test_review_button);
         testCompleteButton = view.findViewById(R.id.test_complete_button);
+        initializeAchievementsButton = view.findViewById(R.id.initialize_achievements_button);
+        diagnosticsButton = view.findViewById(R.id.diagnostics_button);
+        forceSyncButton = view.findViewById(R.id.force_sync_button);
     }
     
     /**
@@ -104,7 +115,7 @@ public class ProfileFragment extends Fragment {
     private void setupClickListeners() {
         viewAchievementsButton.setOnClickListener(v -> {
             // Открываем фрагмент с достижениями
-            Fragment achievementsFragment = new AchievementsFragment();
+            Fragment achievementsFragment = new com.draker.swipetime.fragments.AchievementsFragment();
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, achievementsFragment)
@@ -143,6 +154,60 @@ public class ProfileFragment extends Fragment {
             
             // Обновляем UI
             showActionResult("Просмотр", levelUp);
+        });
+        
+        initializeAchievementsButton.setOnClickListener(v -> {
+            // Принудительно инициализируем достижения
+            AchievementInitializer.forceInitializeAchievements(requireContext(), new AchievementInitializer.InitializationCallback() {
+                @Override
+                public void onInitialized(boolean success, int achievementsCount) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (success) {
+                            Toast.makeText(requireContext(), 
+                                "Достижения инициализированы: " + achievementsCount, 
+                                Toast.LENGTH_LONG).show();
+                            // Перезагружаем данные
+                            loadUserData();
+                        } else {
+                            Toast.makeText(requireContext(), 
+                                "Ошибка инициализации достижений", 
+                                Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+            });
+        });
+        
+        diagnosticsButton.setOnClickListener(v -> {
+            // Запускаем диагностику
+            String diagnosticsReport = AchievementDiagnostics.runFullDiagnostics(requireContext());
+            
+            // Показываем результат в диалоге
+            new AlertDialog.Builder(requireContext())
+                .setTitle("Диагностика достижений")
+                .setMessage(diagnosticsReport)
+                .setPositiveButton("OK", null)
+                .setNeutralButton("Копировать", (dialog, which) -> {
+                    // Можно добавить копирование в буфер обмена
+                    Toast.makeText(requireContext(), "Отчет выведен в логи", Toast.LENGTH_SHORT).show();
+                    android.util.Log.d("AchievementDiagnostics", diagnosticsReport);
+                })
+                .show();
+        });
+        
+        forceSyncButton.setOnClickListener(v -> {
+            // Принудительная синхронизация
+            new Thread(() -> {
+                int syncedCount = AchievementDiagnostics.forceSyncAchievements(requireContext());
+                
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), 
+                        "Синхронизировано достижений: " + syncedCount, 
+                        Toast.LENGTH_LONG).show();
+                    // Перезагружаем данные
+                    loadUserData();
+                });
+            }).start();
         });
     }
     

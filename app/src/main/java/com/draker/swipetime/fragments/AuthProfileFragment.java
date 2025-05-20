@@ -23,6 +23,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.draker.swipetime.R;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
+import com.draker.swipetime.fragments.AchievementsFragment;
 import com.draker.swipetime.utils.FirebaseAuthManager;
 import com.draker.swipetime.utils.FirestoreDataManager;
 import com.draker.swipetime.utils.GamificationManager;
@@ -182,7 +183,7 @@ public class AuthProfileFragment extends Fragment {
         
         // Кнопка просмотра достижений
         viewAchievementsButton.setOnClickListener(v -> {
-            Fragment achievementsFragment = new AchievementsFragment();
+            Fragment achievementsFragment = new com.draker.swipetime.fragments.AchievementsFragment();
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, achievementsFragment)

@@ -40,6 +40,29 @@
         app:layout_constraintTop_toTopOf="@+id/overall_progress_bar"
         app:layout_constraintBottom_toBottomOf="@+id/overall_progress_bar" />
 
+    <Button
+        android:id="@+id/initialize_achievements_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Инициализировать достижения"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@color/colorPrimary"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/overall_progress_bar" />
+
+    <Button
+        android:id="@+id/refresh_achievements_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Обновить достижения"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/colorPrimary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/initialize_achievements_button" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/achievements_recycler_view"
         android:layout_width="0dp"
@@ -48,7 +71,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/overall_progress_bar"
+        app:layout_constraintTop_toBottomOf="@+id/refresh_achievements_button"
         tools:listitem="@layout/item_achievement" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

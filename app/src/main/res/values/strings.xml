@@ -15,12 +15,10 @@
     <string name="liked_title">Избранное</string>
     <string name="liked_empty_message">У вас пока нет избранного контента.\nПроведите вправо по карточкам, чтобы добавить элементы в избранное</string>
     
-    <!-- Экран профиля -->
-    <string name="profile_title">Ваш профиль</string>
-    <string name="profile_message">Здесь будет отображаться ваш профиль и достижения</string>
-    <string name="profile_avatar_description">Аватар пользователя</string>
+    <!-- Профиль -->
     <string name="level_rank_format">Уровень %1$d • %2$s</string>
     <string name="level_progress_format">%1$d%% до уровня %2$d</string>
+    <string name="initialize_achievements">Инициализировать достижения</string>
     
     <!-- Авторизация и синхронизация -->
     <string name="auth_welcome_text">Добро пожаловать в SwipeTime</string>
