@@ -47,7 +47,7 @@ SwipeTime — это мобильное приложение, которое п�
 
 1. **Клонируй репозиторий**
 ```bash
-git clone https://github.com/username/SwipeTime.git
+git clone https://github.com/draker2nich/SwipeTime.git
 cd SwipeTime
 ```
 
