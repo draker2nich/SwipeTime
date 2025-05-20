@@ -11,26 +11,46 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.draker.swipetime.database.dao.AchievementDao;
 import com.draker.swipetime.database.dao.AnimeDao;
 import com.draker.swipetime.database.dao.BookDao;
+import com.draker.swipetime.database.dao.ChallengeMilestoneDao;
+import com.draker.swipetime.database.dao.CollectibleItemDao;
 import com.draker.swipetime.database.dao.ContentDao;
+import com.draker.swipetime.database.dao.DailyQuestDao;
 import com.draker.swipetime.database.dao.GameDao;
 import com.draker.swipetime.database.dao.MovieDao;
 import com.draker.swipetime.database.dao.ReviewDao;
+import com.draker.swipetime.database.dao.SeasonalEventDao;
 import com.draker.swipetime.database.dao.TVShowDao;
+import com.draker.swipetime.database.dao.ThematicChallengeDao;
 import com.draker.swipetime.database.dao.UserAchievementDao;
+import com.draker.swipetime.database.dao.UserChallengeProgressDao;
 import com.draker.swipetime.database.dao.UserDao;
+import com.draker.swipetime.database.dao.UserItemDao;
 import com.draker.swipetime.database.dao.UserPreferencesDao;
+import com.draker.swipetime.database.dao.UserQuestProgressDao;
+import com.draker.swipetime.database.dao.UserRankDao;
+import com.draker.swipetime.database.dao.UserRankProgressDao;
 import com.draker.swipetime.database.dao.UserStatsDao;
 import com.draker.swipetime.database.entities.AchievementEntity;
 import com.draker.swipetime.database.entities.AnimeEntity;
 import com.draker.swipetime.database.entities.BookEntity;
+import com.draker.swipetime.database.entities.ChallengeMilestoneEntity;
+import com.draker.swipetime.database.entities.CollectibleItemEntity;
 import com.draker.swipetime.database.entities.ContentEntity;
+import com.draker.swipetime.database.entities.DailyQuestEntity;
 import com.draker.swipetime.database.entities.GameEntity;
 import com.draker.swipetime.database.entities.MovieEntity;
 import com.draker.swipetime.database.entities.ReviewEntity;
+import com.draker.swipetime.database.entities.SeasonalEventEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
+import com.draker.swipetime.database.entities.ThematicChallengeEntity;
 import com.draker.swipetime.database.entities.UserAchievementCrossRef;
+import com.draker.swipetime.database.entities.UserChallengeProgressEntity;
 import com.draker.swipetime.database.entities.UserEntity;
+import com.draker.swipetime.database.entities.UserItemEntity;
 import com.draker.swipetime.database.entities.UserPreferencesEntity;
+import com.draker.swipetime.database.entities.UserQuestProgressEntity;
+import com.draker.swipetime.database.entities.UserRankEntity;
+import com.draker.swipetime.database.entities.UserRankProgressEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 
 /**
@@ -49,9 +69,19 @@ import com.draker.swipetime.database.entities.UserStatsEntity;
         UserAchievementCrossRef.class,
         ReviewEntity.class,
         UserStatsEntity.class,
-        UserPreferencesEntity.class
+        UserPreferencesEntity.class,
+        DailyQuestEntity.class,
+        UserQuestProgressEntity.class,
+        SeasonalEventEntity.class,
+        CollectibleItemEntity.class,
+        UserItemEntity.class,
+        ThematicChallengeEntity.class,
+        ChallengeMilestoneEntity.class,
+        UserChallengeProgressEntity.class,
+        UserRankEntity.class,
+        UserRankProgressEntity.class
     },
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -282,6 +312,182 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_preferences_user_id` ON `user_preferences` (`user_id`)");
         }
     };
+    
+    // Миграция с версии 5 на версию 6 - добавление таблиц расширенной геймификации
+    private static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            // Создаем таблицу ежедневных заданий
+            database.execSQL("CREATE TABLE IF NOT EXISTS `daily_quests` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`title` TEXT, " +
+                    "`description` TEXT, " +
+                    "`icon_name` TEXT, " +
+                    "`experience_reward` INTEGER NOT NULL, " +
+                    "`item_reward_id` TEXT, " +
+                    "`required_action` TEXT, " +
+                    "`required_count` INTEGER NOT NULL, " +
+                    "`required_category` TEXT, " +
+                    "`creation_date` INTEGER NOT NULL, " +
+                    "`expiration_date` INTEGER NOT NULL, " +
+                    "`is_active` INTEGER NOT NULL, " +
+                    "`difficulty` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`))");
+            
+            // Создаем таблицу прогресса заданий пользователя
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_quest_progress` (" +
+                    "`user_id` TEXT NOT NULL, " +
+                    "`quest_id` TEXT NOT NULL, " +
+                    "`current_progress` INTEGER NOT NULL, " +
+                    "`completed` INTEGER NOT NULL, " +
+                    "`completion_date` INTEGER NOT NULL, " +
+                    "`reward_claimed` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`user_id`, `quest_id`), " +
+                    "FOREIGN KEY(`user_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`quest_id`) REFERENCES `daily_quests`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индексы для прогресса заданий
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_quest_progress_user_id` ON `user_quest_progress` (`user_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_quest_progress_quest_id` ON `user_quest_progress` (`quest_id`)");
+            
+            // Создаем таблицу сезонных событий
+            database.execSQL("CREATE TABLE IF NOT EXISTS `seasonal_events` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`title` TEXT, " +
+                    "`description` TEXT, " +
+                    "`icon_name` TEXT, " +
+                    "`theme_color` TEXT, " +
+                    "`start_date` INTEGER NOT NULL, " +
+                    "`end_date` INTEGER NOT NULL, " +
+                    "`is_active` INTEGER NOT NULL, " +
+                    "`has_special_items` INTEGER NOT NULL, " +
+                    "`has_special_quests` INTEGER NOT NULL, " +
+                    "`bonus_xp_multiplier` REAL NOT NULL, " +
+                    "`event_type` TEXT, " +
+                    "PRIMARY KEY(`id`))");
+            
+            // Создаем таблицу коллекционных предметов
+            database.execSQL("CREATE TABLE IF NOT EXISTS `collectible_items` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`name` TEXT, " +
+                    "`description` TEXT, " +
+                    "`icon_name` TEXT, " +
+                    "`rarity` INTEGER NOT NULL, " +
+                    "`associated_category` TEXT, " +
+                    "`associated_event_id` TEXT, " +
+                    "`is_limited` INTEGER NOT NULL, " +
+                    "`availability_start_date` INTEGER NOT NULL, " +
+                    "`availability_end_date` INTEGER NOT NULL, " +
+                    "`obtained_from` TEXT, " +
+                    "`usage_effect` TEXT, " +
+                    "PRIMARY KEY(`id`))");
+            
+            // Создаем таблицу предметов пользователя
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_items` (" +
+                    "`user_id` TEXT NOT NULL, " +
+                    "`item_id` TEXT NOT NULL, " +
+                    "`obtained_date` INTEGER NOT NULL, " +
+                    "`source` TEXT, " +
+                    "`is_equipped` INTEGER NOT NULL, " +
+                    "`equipped_slot` TEXT, " +
+                    "PRIMARY KEY(`user_id`, `item_id`), " +
+                    "FOREIGN KEY(`user_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`item_id`) REFERENCES `collectible_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индексы для предметов пользователя
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_items_user_id` ON `user_items` (`user_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_items_item_id` ON `user_items` (`item_id`)");
+            
+            // Создаем таблицу тематических испытаний
+            database.execSQL("CREATE TABLE IF NOT EXISTS `thematic_challenges` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`title` TEXT, " +
+                    "`description` TEXT, " +
+                    "`icon_name` TEXT, " +
+                    "`theme_color` TEXT, " +
+                    "`start_date` INTEGER NOT NULL, " +
+                    "`end_date` INTEGER NOT NULL, " +
+                    "`is_active` INTEGER NOT NULL, " +
+                    "`difficulty` INTEGER NOT NULL, " +
+                    "`category` TEXT, " +
+                    "`genre` TEXT, " +
+                    "`xp_reward` INTEGER NOT NULL, " +
+                    "`item_reward_id` TEXT, " +
+                    "`associated_event_id` TEXT, " +
+                    "`required_steps_count` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`))");
+            
+            // Создаем таблицу этапов испытаний
+            database.execSQL("CREATE TABLE IF NOT EXISTS `challenge_milestones` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`challenge_id` TEXT NOT NULL, " +
+                    "`title` TEXT, " +
+                    "`description` TEXT, " +
+                    "`order_index` INTEGER NOT NULL, " +
+                    "`action_type` TEXT, " +
+                    "`required_count` INTEGER NOT NULL, " +
+                    "`content_category` TEXT, " +
+                    "`content_genre` TEXT, " +
+                    "`content_filter` TEXT, " +
+                    "`xp_reward` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`challenge_id`) REFERENCES `thematic_challenges`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индекс для этапов испытаний
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_milestones_challenge_id` ON `challenge_milestones` (`challenge_id`)");
+            
+            // Создаем таблицу прогресса испытаний пользователя
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_challenge_progress` (" +
+                    "`user_id` TEXT NOT NULL, " +
+                    "`challenge_id` TEXT NOT NULL, " +
+                    "`current_milestone_index` INTEGER NOT NULL, " +
+                    "`current_progress` INTEGER NOT NULL, " +
+                    "`total_milestones_completed` INTEGER NOT NULL, " +
+                    "`completed` INTEGER NOT NULL, " +
+                    "`completion_date` INTEGER NOT NULL, " +
+                    "`reward_claimed` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`user_id`, `challenge_id`), " +
+                    "FOREIGN KEY(`user_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`challenge_id`) REFERENCES `thematic_challenges`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индексы для прогресса испытаний
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_challenge_progress_user_id` ON `user_challenge_progress` (`user_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_challenge_progress_challenge_id` ON `user_challenge_progress` (`challenge_id`)");
+            
+            // Создаем таблицу рангов пользователей
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_ranks` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`name` TEXT, " +
+                    "`description` TEXT, " +
+                    "`icon_name` TEXT, " +
+                    "`badge_color` TEXT, " +
+                    "`required_level` INTEGER NOT NULL, " +
+                    "`required_achievements_count` INTEGER NOT NULL, " +
+                    "`required_categories_count` INTEGER NOT NULL, " +
+                    "`bonus_xp_multiplier` REAL NOT NULL, " +
+                    "`category` TEXT, " +
+                    "`order_index` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`id`))");
+            
+            // Создаем таблицу прогресса рангов пользователя
+            database.execSQL("CREATE TABLE IF NOT EXISTS `user_rank_progress` (" +
+                    "`user_id` TEXT NOT NULL, " +
+                    "`rank_id` TEXT NOT NULL, " +
+                    "`unlocked` INTEGER NOT NULL, " +
+                    "`unlock_date` INTEGER NOT NULL, " +
+                    "`is_active` INTEGER NOT NULL, " +
+                    "`level_progress` INTEGER NOT NULL, " +
+                    "`achievements_progress` INTEGER NOT NULL, " +
+                    "`categories_progress` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`user_id`, `rank_id`), " +
+                    "FOREIGN KEY(`user_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`rank_id`) REFERENCES `user_ranks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
+            
+            // Создаем индексы для прогресса рангов
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_rank_progress_user_id` ON `user_rank_progress` (`user_id`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_user_rank_progress_rank_id` ON `user_rank_progress` (`rank_id`)");
+        }
+    };
 
     // DAOs
     public abstract ContentDao contentDao();
@@ -296,6 +502,18 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract ReviewDao reviewDao();
     public abstract UserStatsDao userStatsDao();
     public abstract UserPreferencesDao userPreferencesDao();
+    
+    // DAOs для расширенной геймификации
+    public abstract DailyQuestDao dailyQuestDao();
+    public abstract UserQuestProgressDao userQuestProgressDao();
+    public abstract SeasonalEventDao seasonalEventDao();
+    public abstract CollectibleItemDao collectibleItemDao();
+    public abstract UserItemDao userItemDao();
+    public abstract ThematicChallengeDao thematicChallengeDao();
+    public abstract ChallengeMilestoneDao challengeMilestoneDao();
+    public abstract UserChallengeProgressDao userChallengeProgressDao();
+    public abstract UserRankDao userRankDao();
+    public abstract UserRankProgressDao userRankProgressDao();
 
     // Singleton паттерн для доступа к базе данных
     public static synchronized AppDatabase getInstance(Context context) {
@@ -306,7 +524,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 DATABASE_NAME
             )
             .fallbackToDestructiveMigration() // При изменении схемы БД удаляем старую и создаем новую
-            .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5) // Добавляем миграции
+            .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6) // Добавляем миграции
             .allowMainThreadQueries() // ВНИМАНИЕ: Временное решение для прототипа. В production-версии нужно использовать асинхронные запросы или LiveData
             .build();
         }

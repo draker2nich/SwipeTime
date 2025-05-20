@@ -118,4 +118,12 @@ public class AchievementEntity {
     public void setCategory(String category) {
         this.category = category;
     }
+    
+    /**
+     * Возвращает название достижения (alias для title)
+     * @return название достижения
+     */
+    public String getName() {
+        return title;
+    }
 }

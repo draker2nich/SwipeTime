@@ -795,6 +795,14 @@ public class GamificationManager {
     }
     
     /**
+     * Получить слушателя достижений (для внутреннего использования другими менеджерами)
+     * @return текущий слушатель достижений
+     */
+    public OnAchievementListener getAchievementListener() {
+        return achievementListener;
+    }
+    
+    /**
      * Инициализация статистики пользователя
      * @param userId ID пользователя
      */
