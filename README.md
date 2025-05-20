@@ -1,8 +1,10 @@
 # 📱 SwipeTime
 
 > Android-приложение для выбора развлекательного контента через свайпы
-![photo_3_2025-05-20_15-39-13](https://github.com/user-attachments/assets/a2cbdc70-276b-4ff0-9ce8-68edcf2dc4c0)
-![photo_1_2025-05-20_15-39-13](https://github.com/user-attachments/assets/5934bc3e-470d-4520-acbc-59f9835ffda1)
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/a2cbdc70-276b-4ff0-9ce8-68edcf2dc4c0" width="300" alt="Скриншот 1">
+  <img src="https://github.com/user-attachments/assets/5934bc3e-470d-4520-acbc-59f9835ffda1" width="300" alt="Скриншот 2">
+</div>
 
 ## 🎯 Что это такое?
 
