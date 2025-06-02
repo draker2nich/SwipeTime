@@ -1,7 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.SwipeTime" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <!-- Base application theme - Dark Theme -->
+    <style name="Theme.SwipeTime" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/purple_200</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/black</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_200</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <!-- Background colors -->
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="colorSurface">@color/surface_dark</item>
+        <item name="colorOnSurface">@color/on_surface_dark</item>
+        <item name="colorSurfaceVariant">@color/surface_dark</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary_dark</item>
+        
+        <!-- System bars -->
+        <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+        
+        <!-- Custom app colors -->
+        <item name="cardBackgroundColor">@color/card_background_dark</item>
+        <item name="textPrimaryColor">@color/text_primary_dark</item>
+        <item name="textSecondaryColor">@color/text_secondary_dark</item>
+        
+        <!-- Material 3 elevation overlay -->
+        <item name="elevationOverlayEnabled">true</item>
+        
+        <!-- Window insets handling -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:fitsSystemWindows">false</item>
+    </style>
+    
+    <!-- High contrast dark theme variant -->
+    <style name="Theme.SwipeTime.HighContrast" parent="Theme.SwipeTime">
+        <item name="colorOnSurface">@color/white</item>
+        <item name="android:windowBackground">@color/black</item>
+        <item name="colorSurface">@color/black</item>
+        <item name="cardBackgroundColor">@color/black</item>
+        <item name="textPrimaryColor">@color/white</item>
+        <item name="textSecondaryColor">@color/white</item>
     </style>
 </resources>

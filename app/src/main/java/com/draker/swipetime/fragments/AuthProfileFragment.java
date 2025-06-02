@@ -62,12 +62,9 @@ public class AuthProfileFragment extends Fragment {
     private TextView reviewsCount;
     private TextView achievementsCount;
     private Button viewAchievementsButton;
+    private Button themeButton;
     private Button syncButton;
     private Button signOutButton;
-    private Button testSwipeButton;
-    private Button testRatingButton;
-    private Button testReviewButton;
-    private Button testCompleteButton;
     
     // Менеджеры для работы с Firebase и сетью
     private FirebaseAuthManager authManager;
@@ -156,12 +153,9 @@ public class AuthProfileFragment extends Fragment {
         achievementsCount = view.findViewById(R.id.achievements_count);
         
         viewAchievementsButton = view.findViewById(R.id.view_achievements_button);
+        themeButton = view.findViewById(R.id.theme_button);
         syncButton = view.findViewById(R.id.sync_button);
         signOutButton = view.findViewById(R.id.sign_out_button);
-        testSwipeButton = view.findViewById(R.id.test_swipe_button);
-        testRatingButton = view.findViewById(R.id.test_rating_button);
-        testReviewButton = view.findViewById(R.id.test_review_button);
-        testCompleteButton = view.findViewById(R.id.test_complete_button);
         
         // UI для статуса сети
         networkStatusCard = view.findViewById(R.id.network_status_card);
@@ -191,41 +185,14 @@ public class AuthProfileFragment extends Fragment {
                     .commit();
         });
         
-        // Обработчики тестовых кнопок для имитации действий
-        testSwipeButton.setOnClickListener(v -> {
-            // Имитируем свайп вправо
-            Log.d(TAG, "Имитация свайпа для пользователя: " + gamificationViewModel.getCurrentUserId());
-            boolean levelUp = gamificationViewModel.registerSwipe(true, "test_content_id", "Тестовый контент");
-            
-            // Обновляем UI
-            showActionResult("Свайп", levelUp);
-        });
-        
-        testRatingButton.setOnClickListener(v -> {
-            // Имитируем оценку
-            Log.d(TAG, "Имитация оценки для пользователя: " + gamificationViewModel.getCurrentUserId());
-            boolean levelUp = gamificationViewModel.registerRating("test_content_id", "Тестовый контент", 4.5f);
-            
-            // Обновляем UI
-            showActionResult("Оценка", levelUp);
-        });
-        
-        testReviewButton.setOnClickListener(v -> {
-            // Имитируем написание рецензии
-            Log.d(TAG, "Имитация рецензии для пользователя: " + gamificationViewModel.getCurrentUserId());
-            boolean levelUp = gamificationViewModel.registerReview("test_content_id", "Тестовый контент");
-            
-            // Обновляем UI
-            showActionResult("Рецензия", levelUp);
-        });
-        
-        testCompleteButton.setOnClickListener(v -> {
-            // Имитируем просмотр/прочтение
-            Log.d(TAG, "Имитация просмотра для пользователя: " + gamificationViewModel.getCurrentUserId());
-            boolean levelUp = gamificationViewModel.registerCompletion("test_content_id", "Тестовый контент", "Фильмы");
-            
-            // Обновляем UI
-            showActionResult("Просмотр", levelUp);
+        // Кнопка смены темы
+        themeButton.setOnClickListener(v -> {
+            com.draker.swipetime.MainActivity mainActivity = (com.draker.swipetime.MainActivity) requireActivity();
+            if (mainActivity != null) {
+                mainActivity.getThemeManager().toggleTheme();
+                // Обновляем текст кнопки
+                updateThemeButtonText();
+            }
         });
     }
     
@@ -425,6 +392,22 @@ public class AuthProfileFragment extends Fragment {
     private void updateUI(boolean isSignedIn) {
         authCardView.setVisibility(isSignedIn ? View.GONE : View.VISIBLE);
         profileCardView.setVisibility(isSignedIn ? View.VISIBLE : View.GONE);
+        
+        // Обновление текста кнопки темы
+        updateThemeButtonText();
+    }
+    
+    /**
+     * Обновление текста кнопки смены темы
+     */
+    private void updateThemeButtonText() {
+        if (themeButton != null && getActivity() instanceof com.draker.swipetime.MainActivity) {
+            com.draker.swipetime.MainActivity mainActivity = (com.draker.swipetime.MainActivity) getActivity();
+            if (mainActivity != null) {
+                String currentTheme = mainActivity.getThemeManager().getThemeName(requireContext());
+                themeButton.setText(getString(R.string.current_theme, currentTheme));
+            }
+        }
     }
     
     /**

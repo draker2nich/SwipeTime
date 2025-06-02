@@ -48,6 +48,9 @@
     
     <!-- Карточки контента -->
     <string name="content_cover">Обложка контента</string>
+    <string name="content_rating">Рейтинг контента</string>
+    <string name="swipe_dislike">Не нравится</string>
+    <string name="swipe_like">Нравится</string>
     <string name="swipe_left_indicator">Свайп влево (не нравится)</string>
     <string name="swipe_right_indicator">Свайп вправо (нравится)</string>
     <string name="empty_cards">Карточки закончились</string>
@@ -76,6 +79,25 @@
     <string name="achievement_progress">Прогресс: %1$d%%</string>
     <string name="level_up">Уровень повышен!</string>
     <string name="xp_reward">+%1$d XP</string>
+    
+    <!-- Навигация -->
+    <string name="navigation_categories_description">Открыть категории контента</string>
+    <string name="navigation_liked_description">Открыть избранное</string>
+    <string name="navigation_profile_description">Открыть профиль пользователя</string>
+    
+    <!-- Настройки и темы -->
+    <string name="settings">Настройки</string>
+    <string name="theme_settings">Тема оформления</string>
+    <string name="accessibility_settings">Доступность</string>
+    <string name="current_theme">Текущая тема: %1$s</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Темная</string>
+    <string name="theme_auto">Системная</string>
+    <string name="change_theme">Сменить тему</string>
+    <string name="haptic_feedback">Вибрация при взаимодействии</string>
+    <string name="large_text">Крупный шрифт</string>
+    <string name="high_contrast">Высокий контраст</string>
+    <string name="reduce_motion">Упрощенные анимации</string>
     
     <!-- Фильтры контента -->
     <string name="filters_title">Настройки фильтров</string>

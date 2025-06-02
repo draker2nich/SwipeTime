@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Цвета для категорий контента -->
-    <color name="movieColor">#F44336</color>    <!-- Красный -->
-    <color name="tvShowColor">#2196F3</color>  <!-- Синий -->
-    <color name="gameColor">#4CAF50</color>     <!-- Зеленый -->
-    <color name="bookColor">#FF9800</color>     <!-- Оранжевый -->
-    <color name="animeColor">#9C27B0</color>     <!-- Фиолетовый -->
-    <color name="musicColor">#FF5722</color>     <!-- Темно-оранжевый -->
-    <color name="defaultColor">#607D8B</color>     <!-- Серо-голубой -->
+    <!-- Цвета фонов для чипов категорий (уникальные только для этого файла) -->
+    <color name="chip_category_movies">#FFE5E5</color>
+    <color name="chip_category_tv_shows">#E3F2FD</color>
+    <color name="chip_category_games">#E8F5E8</color>
+    <color name="chip_category_books">#FFF3E0</color>
+    <color name="chip_category_anime">#F3E5F5</color>
+    <color name="chip_category_music">#FFEBE9</color>
+    <color name="chip_category_default">#F5F5F5</color>
 </resources>

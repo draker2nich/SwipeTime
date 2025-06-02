@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Small screen dimensions (phones) -->
+    
+    <!-- Margins and Paddings - Reduced for small screens -->
+    <dimen name="margin_tiny">2dp</dimen>
+    <dimen name="margin_small">6dp</dimen>
+    <dimen name="margin_medium">12dp</dimen>
+    <dimen name="margin_large">18dp</dimen>
+    <dimen name="margin_xlarge">24dp</dimen>
+    
+    <dimen name="padding_tiny">2dp</dimen>
+    <dimen name="padding_small">6dp</dimen>
+    <dimen name="padding_medium">12dp</dimen>
+    <dimen name="padding_large">18dp</dimen>
+    <dimen name="padding_xlarge">24dp</dimen>
+    
+    <!-- Content specific -->
+    <dimen name="content_padding">12dp</dimen>
+    <dimen name="content_margin">12dp</dimen>
+    
+    <!-- Card dimensions - Smaller for compact screens -->
+    <dimen name="card_corner_radius">8dp</dimen>
+    <dimen name="card_elevation">2dp</dimen>
+    <dimen name="card_margin">6dp</dimen>
+    <dimen name="card_padding">12dp</dimen>
+    
+    <!-- Cover image sizes - Compact for small screens -->
+    <dimen name="cover_width">240dp</dimen>
+    <dimen name="cover_height">340dp</dimen>
+    <dimen name="cover_height_portrait">340dp</dimen>
+    <dimen name="cover_height_landscape">240dp</dimen>
+    
+    <!-- Button dimensions -->
+    <dimen name="button_height">44dp</dimen>
+    <dimen name="button_min_width">80dp</dimen>
+    <dimen name="button_padding">10dp</dimen>
+    <dimen name="button_corner_radius">6dp</dimen>
+    <dimen name="fab_margin">12dp</dimen>
+    
+    <!-- Text sizes - Compact for small screens -->
+    <dimen name="text_size_caption">11sp</dimen>
+    <dimen name="text_size_small">13sp</dimen>
+    <dimen name="text_size_medium">15sp</dimen>
+    <dimen name="text_size_large">17sp</dimen>
+    <dimen name="text_size_xlarge">19sp</dimen>
+    <dimen name="text_size_display">22sp</dimen>
+    <dimen name="text_size_headline">24sp</dimen>
+    
+    <!-- Icon sizes -->
+    <dimen name="icon_size_small">14dp</dimen>
+    <dimen name="icon_size_medium">20dp</dimen>
+    <dimen name="icon_size_large">28dp</dimen>
+    <dimen name="icon_size_xlarge">40dp</dimen>
+    
+    <!-- Touch targets - Maintain accessibility standards -->
+    <dimen name="touch_target_min">48dp</dimen>
+    <dimen name="touch_target_recommended">56dp</dimen>
+    
+    <!-- List item dimensions -->
+    <dimen name="list_item_height">64dp</dimen>
+    <dimen name="list_item_height_small">48dp</dimen>
+    <dimen name="list_item_height_large">72dp</dimen>
+    
+    <!-- Navigation -->
+    <dimen name="bottom_nav_height">52dp</dimen>
+    <dimen name="toolbar_height">52dp</dimen>
+    
+    <!-- Animation and gesture -->
+    <dimen name="swipe_threshold">80dp</dimen>
+    <dimen name="animation_offset">6dp</dimen>
+</resources>

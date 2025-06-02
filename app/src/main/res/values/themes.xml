@@ -1,35 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.SwipeTime" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
-        <item name="colorSecondary">@color/colorAccent</item>
-        <item name="colorSurface">@color/white</item>
-        <item name="colorOnSurface">@color/black</item>
-        <item name="android:colorBackground">@color/white</item>
+    <!-- Base application theme - Light Theme -->
+    <style name="Theme.SwipeTime" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
         
-        <!-- Настройки для элементов Material Design -->
-        <item name="chipStyle">@style/Widget.SwipeTime.Chip</item>
-        <item name="materialCardViewStyle">@style/Widget.SwipeTime.CardView</item>
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_700</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <!-- Background colors -->
+        <item name="android:windowBackground">@color/background_light</item>
+        <item name="colorSurface">@color/surface_light</item>
+        <item name="colorOnSurface">@color/on_surface_light</item>
+        <item name="colorSurfaceVariant">@color/surface_light</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary_light</item>
+        
+        <!-- System bars -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:navigationBarColor">?attr/colorPrimary</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+        
+        <!-- Custom app colors -->
+        <item name="cardBackgroundColor">@color/card_background_light</item>
+        <item name="textPrimaryColor">@color/text_primary_light</item>
+        <item name="textSecondaryColor">@color/text_secondary_light</item>
+        
+        <!-- Material 3 elevation overlay -->
+        <item name="elevationOverlayEnabled">false</item>
+        
+        <!-- Window insets handling -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:fitsSystemWindows">false</item>
     </style>
-
-    <style name="Theme.SwipeTime" parent="Base.Theme.SwipeTime" />
     
-    <!-- Стиль для чипов -->
-    <style name="Widget.SwipeTime.Chip" parent="Widget.Material3.Chip.Assist">
-        <item name="chipMinHeight">24dp</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textAppearance">@style/TextAppearance.MaterialComponents.Caption</item>
-        <item name="chipIconSize">16dp</item>
-        <item name="chipStartPadding">8dp</item>
-        <item name="chipEndPadding">8dp</item>
+    <!-- Theme for large screens (tablets) -->
+    <style name="Theme.SwipeTime.Large">
+        <item name="android:windowMinWidthMajor">@android:dimen/dialog_min_width_major</item>
+        <item name="android:windowMinWidthMinor">@android:dimen/dialog_min_width_minor</item>
     </style>
     
-    <!-- Стиль для карточек -->
-    <style name="Widget.SwipeTime.CardView" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">12dp</item>
-        <item name="cardElevation">4dp</item>
-        <item name="contentPadding">12dp</item>
+    <!-- High contrast theme variant -->
+    <style name="Theme.SwipeTime.HighContrast" parent="Theme.SwipeTime">
+        <item name="colorOnSurface">@color/high_contrast_text</item>
+        <item name="android:windowBackground">@color/high_contrast_background</item>
+        <item name="colorSurface">@color/high_contrast_background</item>
+        <item name="cardBackgroundColor">@color/high_contrast_background</item>
+        <item name="textPrimaryColor">@color/high_contrast_text</item>
     </style>
 </resources>

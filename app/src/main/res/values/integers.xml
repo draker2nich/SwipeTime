@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Animation durations -->
+    <integer name="short_anim_time">200</integer>
+    <integer name="medium_anim_time">400</integer>
+    <integer name="long_anim_time">600</integer>
+    
+    <!-- Other integer values -->
+    <integer name="card_stack_max_visible">3</integer>
+    <integer name="default_animation_duration">300</integer>
+</resources>

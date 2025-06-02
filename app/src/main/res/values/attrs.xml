@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom theme attributes -->
+    <attr name="textPrimaryColor" format="color|reference" />
+    <attr name="textSecondaryColor" format="color|reference" />
+    <attr name="cardBackgroundColor" format="color|reference" />
+</resources>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:padding="@dimen/padding_medium"
+    tools:context=".fragments.CardStackFragment">
+
+    <!-- Layout optimized for landscape orientation -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Card stack container - Left side -->
+        <FrameLayout
+            android:id="@+id/card_stack_container"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1.2"
+            android:layout_marginEnd="@dimen/margin_medium">
+
+            <com.yuyakaido.android.cardstackview.CardStackView
+                android:id="@+id/card_stack_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:importantForAccessibility="yes"
+                android:contentDescription="@string/swipe_left_indicator" />
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/empty_state"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="@dimen/icon_size_xlarge"
+                    android:layout_height="@dimen/icon_size_xlarge"
+                    android:src="@drawable/ic_empty_cards"
+                    android:layout_marginBottom="@dimen/margin_medium"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/empty_cards"
+                    android:textAppearance="@style/TextAppearance.SwipeTime.Title"
+                    android:layout_marginBottom="@dimen/margin_small" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/empty_cards_message"
+                    android:textAppearance="@style/TextAppearance.SwipeTime.Body"
+                    android:gravity="center"
+                    android:layout_marginBottom="@dimen/margin_medium" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/reload_cards_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reload_cards"
+                    style="@style/Widget.SwipeTime.Button" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- Controls and info - Right side -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.8"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <!-- Filter button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/filter_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filters_title"
+                android:drawableStart="@drawable/ic_filter"
+                android:drawablePadding="@dimen/padding_small"
+                style="@style/Widget.SwipeTime.Button.Outlined"
+                android:layout_marginBottom="@dimen/margin_large"
+                android:contentDescription="@string/filters_btn_description" />
+
+            <!-- Action buttons -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginBottom="@dimen/margin_large">
+
+                <!-- Dislike button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/dislike_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_dislike"
+                    android:backgroundTint="@color/dislike_red"
+                    android:layout_marginBottom="@dimen/margin_medium"
+                    android:contentDescription="@string/swipe_dislike"
+                    app:tint="@android:color/white"
+                    style="@style/Widget.SwipeTime.FloatingActionButton" />
+
+                <!-- Like button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/like_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_like"
+                    android:backgroundTint="@color/like_green"
+                    android:contentDescription="@string/swipe_like"
+                    app:tint="@android:color/white"
+                    style="@style/Widget.SwipeTime.FloatingActionButton" />
+            </LinearLayout>
+
+            <!-- Swipe hints -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Свайпните или используйте кнопки"
+                android:textAppearance="@style/TextAppearance.SwipeTime.Caption"
+                android:gravity="center"
+                android:alpha="0.7" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

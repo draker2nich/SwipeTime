@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- IDs для accessibility actions -->
+    <item name="action_like" type="id" />
+    <item name="action_dislike" type="id" />
+</resources>
