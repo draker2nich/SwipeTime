@@ -7,6 +7,7 @@ import com.draker.swipetime.api.RetrofitClient;
 import com.draker.swipetime.api.models.jikan.JikanAnime;
 import com.draker.swipetime.api.models.jikan.JikanResponse;
 import com.draker.swipetime.api.services.JikanService;
+import com.draker.swipetime.api.retry.IntelligentRetryStrategy;
 import com.draker.swipetime.database.entities.AnimeEntity;
 
 import java.util.ArrayList;
@@ -17,100 +18,175 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 /**
- * Репозиторий для работы с Jikan API
+ * Репозиторий для работы с Jikan API с интегрированной защитой от rate limiting
  */
 public class JikanRepository {
     private static final String TAG = "JikanRepository";
     private JikanService service;
+    private IntelligentRetryStrategy retryStrategy;
 
     public JikanRepository() {
         service = RetrofitClient.getJikanClient().create(JikanService.class);
+        retryStrategy = IntelligentRetryStrategy.forJikanApi();
+        
+        Log.d(TAG, "JikanRepository инициализирован с защитой от rate limiting");
+        Log.d(TAG, "Стратегия повторов: " + retryStrategy.getStrategyInfo());
     }
 
     /**
-     * Загрузить топ аниме
+     * Загрузить топ аниме с защитой от rate limiting
      * @param page номер страницы
      * @return Observable со списком AnimeEntity
      */
     public Observable<List<AnimeEntity>> getTopAnime(int page) {
-        return service.getTopAnime(page, ApiConstants.PAGE_SIZE, "popularity", "desc")
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertAnimeResponseToEntities)
-                .onErrorReturn(error -> {
-                    Log.e(TAG, "Error loading top anime: " + error.getMessage(), error);
-                    // Возвращаем пустой список в случае ошибки, чтобы не ломать поток
-                    return new ArrayList<>();
-                });
+        Log.d(TAG, "Запрос топ аниме, страница: " + page);
+        
+        return retryStrategy.applyTo(
+                service.getTopAnime(page, ApiConstants.PAGE_SIZE, "popularity", "desc")
+        )
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .map(this::convertAnimeResponseToEntities)
+        .doOnNext(result -> {
+            Log.d(TAG, "Успешно загружено " + result.size() + " аниме с страницы " + page);
+        })
+        .doOnError(error -> {
+            Log.e(TAG, "Ошибка загрузки топ аниме (страница " + page + "): " + error.getMessage(), error);
+        })
+        .onErrorReturn(error -> {
+            Log.w(TAG, "Возвращаем пустой список из-за ошибки: " + error.getMessage());
+            return new ArrayList<>();
+        });
     }
 
     /**
-     * Поиск аниме
+     * Поиск аниме с защитой от rate limiting
      * @param query поисковый запрос
      * @param page номер страницы
      * @return Observable со списком AnimeEntity
      */
     public Observable<List<AnimeEntity>> searchAnime(String query, int page) {
-        return service.searchAnime(query, page, ApiConstants.PAGE_SIZE)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertAnimeResponseToEntities)
-                .onErrorReturn(error -> {
-                    Log.e(TAG, "Error searching anime: " + error.getMessage(), error);
-                    // Возвращаем пустой список в случае ошибки, чтобы не ломать поток
-                    return new ArrayList<>();
-                });
+        Log.d(TAG, "Поиск аниме: '" + query + "', страница: " + page);
+        
+        return retryStrategy.applyTo(
+                service.searchAnime(query, page, ApiConstants.PAGE_SIZE)
+        )
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .map(this::convertAnimeResponseToEntities)
+        .doOnNext(result -> {
+            Log.d(TAG, "Найдено " + result.size() + " аниме по запросу '" + query + "' (страница " + page + ")");
+        })
+        .doOnError(error -> {
+            Log.e(TAG, "Ошибка поиска аниме '" + query + "' (страница " + page + "): " + error.getMessage(), error);
+        })
+        .onErrorReturn(error -> {
+            Log.w(TAG, "Возвращаем пустой список из-за ошибки поиска: " + error.getMessage());
+            return new ArrayList<>();
+        });
     }
 
     /**
-     * Получить детальную информацию об аниме
+     * Получить детальную информацию об аниме с защитой от rate limiting
      * @param animeId ID аниме
      * @return Observable с AnimeEntity
      */
     public Observable<AnimeEntity> getAnimeDetails(int animeId) {
-        return service.getAnimeDetails(animeId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertAnimeToEntity);
+        Log.d(TAG, "Запрос деталей аниме ID: " + animeId);
+        
+        return retryStrategy.applyTo(
+                service.getAnimeDetails(animeId)
+        )
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .map(this::convertAnimeToEntity)
+        .doOnNext(result -> {
+            Log.d(TAG, "Получены детали аниме: " + result.getTitle());
+        })
+        .doOnError(error -> {
+            Log.e(TAG, "Ошибка загрузки деталей аниме ID " + animeId + ": " + error.getMessage(), error);
+        });
     }
 
     /**
-     * Получить аниме по жанру
+     * Получить аниме по жанру с защитой от rate limiting
      * @param genres ID жанров через запятую
      * @param page номер страницы
      * @return Observable со списком AnimeEntity
      */
     public Observable<List<AnimeEntity>> getAnimeByGenre(String genres, int page) {
-        return service.getAnimeByGenre(genres, page, ApiConstants.PAGE_SIZE)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertAnimeResponseToEntities);
+        Log.d(TAG, "Запрос аниме по жанрам: " + genres + ", страница: " + page);
+        
+        return retryStrategy.applyTo(
+                service.getAnimeByGenre(genres, page, ApiConstants.PAGE_SIZE)
+        )
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .map(this::convertAnimeResponseToEntities)
+        .doOnNext(result -> {
+            Log.d(TAG, "Найдено " + result.size() + " аниме по жанрам " + genres + " (страница " + page + ")");
+        })
+        .doOnError(error -> {
+            Log.e(TAG, "Ошибка загрузки аниме по жанрам " + genres + " (страница " + page + "): " + error.getMessage(), error);
+        })
+        .onErrorReturn(error -> {
+            Log.w(TAG, "Возвращаем пустой список из-за ошибки загрузки по жанрам: " + error.getMessage());
+            return new ArrayList<>();
+        });
     }
 
     /**
-     * Получить аниме по статусу
+     * Получить аниме по статусу с защитой от rate limiting
      * @param status статус (airing, complete, upcoming)
      * @param page номер страницы
      * @return Observable со списком AnimeEntity
      */
     public Observable<List<AnimeEntity>> getAnimeByStatus(String status, int page) {
-        return service.getAnimeByStatus(status, page, ApiConstants.PAGE_SIZE)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertAnimeResponseToEntities);
+        Log.d(TAG, "Запрос аниме по статусу: " + status + ", страница: " + page);
+        
+        return retryStrategy.applyTo(
+                service.getAnimeByStatus(status, page, ApiConstants.PAGE_SIZE)
+        )
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .map(this::convertAnimeResponseToEntities)
+        .doOnNext(result -> {
+            Log.d(TAG, "Найдено " + result.size() + " аниме со статусом " + status + " (страница " + page + ")");
+        })
+        .doOnError(error -> {
+            Log.e(TAG, "Ошибка загрузки аниме по статусу " + status + " (страница " + page + "): " + error.getMessage(), error);
+        })
+        .onErrorReturn(error -> {
+            Log.w(TAG, "Возвращаем пустой список из-за ошибки загрузки по статусу: " + error.getMessage());
+            return new ArrayList<>();
+        });
     }
 
     /**
-     * Получить аниме по типу
+     * Получить аниме по типу с защитой от rate limiting
      * @param type тип (TV, Movie, OVA, etc.)
      * @param page номер страницы
      * @return Observable со списком AnimeEntity
      */
     public Observable<List<AnimeEntity>> getAnimeByType(String type, int page) {
-        return service.getAnimeByType(type, page, ApiConstants.PAGE_SIZE)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(this::convertAnimeResponseToEntities);
+        Log.d(TAG, "Запрос аниме по типу: " + type + ", страница: " + page);
+        
+        return retryStrategy.applyTo(
+                service.getAnimeByType(type, page, ApiConstants.PAGE_SIZE)
+        )
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .map(this::convertAnimeResponseToEntities)
+        .doOnNext(result -> {
+            Log.d(TAG, "Найдено " + result.size() + " аниме типа " + type + " (страница " + page + ")");
+        })
+        .doOnError(error -> {
+            Log.e(TAG, "Ошибка загрузки аниме по типу " + type + " (страница " + page + "): " + error.getMessage(), error);
+        })
+        .onErrorReturn(error -> {
+            Log.w(TAG, "Возвращаем пустой список из-за ошибки загрузки по типу: " + error.getMessage());
+            return new ArrayList<>();
+        });
     }
 
     /**

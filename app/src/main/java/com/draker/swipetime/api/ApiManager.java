@@ -18,6 +18,7 @@ import com.draker.swipetime.repository.BookRepository;
 import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
+import com.draker.swipetime.utils.NetworkHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,9 @@ public class ApiManager {
     
     // Добавляем ApiDataManager для управления уникальными данными
     private final ApiDataManager apiDataManager;
+    
+    // Добавляем Application для доступа к контексту
+    private final Application application;
 
     /**
      * Интерфейс для обратного вызова после загрузки данных
@@ -62,6 +66,7 @@ public class ApiManager {
      * @param application Application
      */
     public ApiManager(Application application) {
+        this.application = application;
         tmdbRepository = new TMDbRepository();
         rawgRepository = new RawgRepository();
         googleBooksRepository = new GoogleBooksRepository();
@@ -305,11 +310,19 @@ public class ApiManager {
     }
 
     /**
-     * Загрузить топ аниме
+     * Загрузить топ аниме с улучшенной защитой от rate limiting
      * @param page номер страницы
      * @param callback обратный вызов с результатом
      */
     public void loadTopAnime(int page, ApiCallback<AnimeEntity> callback) {
+        // Проверяем, можно ли делать запрос к Jikan API
+        NetworkHelper networkHelper = NetworkHelper.getInstance(application);
+        if (!networkHelper.shouldMakeApiCall("jikan_anime")) {
+            Log.w(TAG, "Запрос к Jikan API заблокирован из-за проблем с API или сетью");
+            callback.onError(new RuntimeException("API недоступен из-за проблем с сетью или rate limiting"));
+            return;
+        }
+        
         // Получаем номер страницы для загрузки
         if (page <= 0) {
             page = apiDataManager.getNextPageToken("anime");
@@ -318,13 +331,20 @@ public class ApiManager {
         }
         
         final int pageToLoad = page;
-        Log.d(TAG, "Загрузка топ аниме: страница " + pageToLoad);
+        final long startTime = System.currentTimeMillis();
+        
+        Log.d(TAG, "Загрузка топ аниме: страница " + pageToLoad + " с защитой от rate limiting");
         
         Disposable disposable = jikanRepository.getTopAnime(pageToLoad)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         animeList -> {
+                            long responseTime = System.currentTimeMillis() - startTime;
+                            
+                            // Записываем успешный вызов
+                            networkHelper.recordSuccessfulApiCall("jikan_anime", responseTime);
+                            
                             // Фильтруем уже загруженные аниме
                             List<AnimeEntity> uniqueAnime = apiDataManager.filterAlreadyLoaded("anime", animeList);
                             
@@ -340,10 +360,22 @@ public class ApiManager {
                                 animeRepository.insert(anime);
                             }
                             
+                            Log.d(TAG, "Успешно загружено " + uniqueAnime.size() + " уникальных аниме");
                             callback.onSuccess(uniqueAnime);
                         },
                         error -> {
-                            Log.e(TAG, "Error loading top anime: " + error.getMessage());
+                            long responseTime = System.currentTimeMillis() - startTime;
+                            
+                            // Определяем код ошибки
+                            int errorCode = 0;
+                            if (error instanceof retrofit2.HttpException) {
+                                errorCode = ((retrofit2.HttpException) error).code();
+                            }
+                            
+                            // Записываем неудачный вызов
+                            networkHelper.recordFailedApiCall("jikan_anime", responseTime, errorCode);
+                            
+                            Log.e(TAG, "Ошибка загрузки топ аниме (страница " + pageToLoad + "): " + error.getMessage());
                             callback.onError(error);
                         }
                 );
