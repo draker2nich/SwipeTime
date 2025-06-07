@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?attr/colorSurface">
+
+    <!-- Заголовок -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔥 Firebase Тестирование"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Кнопка диагностики -->
+    <Button
+        android:id="@+id/run_diagnostics_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔍 Запустить диагностику"
+        android:layout_marginBottom="16dp"
+        style="@style/Widget.Material3.Button" />
+
+    <!-- Результаты диагностики -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/diagnostics_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Нажмите кнопку диагностики для проверки системы"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:textColor="?attr/colorOnSurface"
+            android:background="?attr/colorSurfaceVariant"
+            android:padding="12dp" />
+
+    </ScrollView>
+
+    <!-- Кнопки тестирования -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/test_sign_in_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🔑 Войти"
+            android:layout_marginEnd="8dp"
+            android:enabled="false"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
+
+        <Button
+            android:id="@+id/test_sign_out_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🚪 Выйти"
+            android:layout_marginStart="8dp"
+            android:enabled="false"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    </LinearLayout>
+
+    <!-- Кнопка синхронизации -->
+    <Button
+        android:id="@+id/test_sync_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔄 Тест синхронизации"
+        android:layout_marginBottom="16dp"
+        android:enabled="false"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    <!-- Статус -->
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Статус: Готов к тестированию"
+        android:textSize="14sp"
+        android:textColor="?attr/colorPrimary"
+        android:background="?attr/colorPrimaryContainer"
+        android:padding="12dp"
+        android:gravity="center" />
+
+</LinearLayout>

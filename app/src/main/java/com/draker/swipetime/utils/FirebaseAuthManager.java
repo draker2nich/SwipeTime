@@ -45,15 +45,18 @@ public class FirebaseAuthManager {
         // Инициализация Firebase Auth
         firebaseAuth = FirebaseAuth.getInstance();
 
-        // Настройка Google Sign In
+        // Настройка Google Sign In с правильным Web Client ID
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(context.getString(R.string.default_web_client_id))
                 .requestEmail()
+                .requestProfile()
                 .build();
         googleSignInClient = GoogleSignIn.getClient(context, gso);
 
         // Инициализация репозитория пользователей
         userRepository = new UserRepository((Application) context.getApplicationContext());
+        
+        Log.d(TAG, "FirebaseAuthManager инициализирован с Web Client ID: " + context.getString(R.string.default_web_client_id));
     }
 
     /**
@@ -73,6 +76,7 @@ public class FirebaseAuthManager {
      * @return Intent для запуска активити выбора аккаунта Google
      */
     public Intent getGoogleSignInIntent() {
+        Log.d(TAG, "Создание Intent для Google Sign In");
         return googleSignInClient.getSignInIntent();
     }
 
@@ -88,16 +92,42 @@ public class FirebaseAuthManager {
             return;
         }
         
+        Log.d(TAG, "Обработка результата Google Sign In");
         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
         try {
             // Успешный вход в Google
             GoogleSignInAccount account = task.getResult(ApiException.class);
-            Log.d(TAG, "Google Sign In успешно, аутентификация с Firebase");
+            Log.d(TAG, "Google Sign In успешно для аккаунта: " + account.getEmail());
+            Log.d(TAG, "Получен ID Token: " + (account.getIdToken() != null ? "YES" : "NO"));
             firebaseAuthWithGoogle(account, authCallback);
         } catch (ApiException e) {
             // Ошибка входа в Google
-            Log.e(TAG, "Google Sign In неудачно, код ошибки: " + e.getStatusCode(), e);
-            authCallback.onFailure("Не удалось войти через Google: " + e.getMessage());
+            Log.e(TAG, "Google Sign In неудачно, код ошибки: " + e.getStatusCode() + ", сообщение: " + e.getMessage(), e);
+            
+            String errorMessage = getGoogleSignInErrorMessage(e.getStatusCode());
+            authCallback.onFailure(errorMessage);
+        }
+    }
+
+    /**
+     * Получить понятное сообщение об ошибке Google Sign In
+     */
+    private String getGoogleSignInErrorMessage(int errorCode) {
+        switch (errorCode) {
+            case 7: // NETWORK_ERROR
+                return "Проблемы с интернет соединением. Проверьте подключение и попробуйте снова.";
+            case 8: // INTERNAL_ERROR
+                return "Внутренняя ошибка Google Services. Попробуйте позже.";
+            case 10: // DEVELOPER_ERROR
+                return "Ошибка конфигурации приложения. Проверьте настройки Firebase.";
+            case 12500: // SIGN_IN_CANCELLED
+                return "Вход отменен пользователем.";
+            case 12501: // SIGN_IN_CURRENTLY_IN_PROGRESS
+                return "Процесс входа уже выполняется.";
+            case 12502: // SIGN_IN_FAILED
+                return "Не удалось войти. Попробуйте снова.";
+            default:
+                return "Не удалось войти через Google (код: " + errorCode + "). Попробуйте снова.";
         }
     }
 
@@ -107,24 +137,40 @@ public class FirebaseAuthManager {
      * @param authCallback колбэк с результатом аутентификации
      */
     private void firebaseAuthWithGoogle(GoogleSignInAccount account, final AuthCallback authCallback) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+        Log.d(TAG, "Начинаем аутентификацию в Firebase");
+        
+        String idToken = account.getIdToken();
+        if (idToken == null) {
+            Log.e(TAG, "ID Token равен null");
+            authCallback.onFailure("Не удалось получить токен аутентификации от Google");
+            return;
+        }
+        
+        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         firebaseAuth.signInWithCredential(credential)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         // Успешная аутентификация
                         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
                         if (firebaseUser != null) {
+                            Log.d(TAG, "Firebase аутентификация успешна для пользователя: " + firebaseUser.getUid());
                             // Сохраняем или обновляем пользователя в локальной базе данных
                             saveUserToLocalDatabase(firebaseUser);
                             authCallback.onSuccess(firebaseUser);
                         } else {
+                            Log.e(TAG, "FirebaseUser равен null после успешной аутентификации");
                             authCallback.onFailure("Пользователь Firebase равен null");
                         }
                     } else {
                         // Ошибка аутентификации
-                        Log.w(TAG, "firebaseAuthWithGoogle:failure", task.getException());
-                        authCallback.onFailure("Ошибка аутентификации в Firebase: " + 
-                                (task.getException() != null ? task.getException().getMessage() : "неизвестная ошибка"));
+                        Exception exception = task.getException();
+                        Log.w(TAG, "firebaseAuthWithGoogle:failure", exception);
+                        
+                        String errorMessage = "Ошибка аутентификации в Firebase";
+                        if (exception != null) {
+                            errorMessage += ": " + exception.getMessage();
+                        }
+                        authCallback.onFailure(errorMessage);
                     }
                 });
     }
@@ -135,29 +181,39 @@ public class FirebaseAuthManager {
      */
     private void saveUserToLocalDatabase(FirebaseUser firebaseUser) {
         executor.execute(() -> {
-            // Проверяем существует ли пользователь в локальной БД
-            UserEntity existingUser = userRepository.getUserById(firebaseUser.getUid());
-            
-            if (existingUser == null) {
-                // Создаем нового пользователя
-                UserEntity newUser = new UserEntity(
-                        firebaseUser.getUid(),
-                        firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User",
-                        firebaseUser.getEmail(),
-                        firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null,
-                        0, // Начальный опыт
-                        0  // Начальный уровень
-                );
-                userRepository.insert(newUser);
+            try {
+                Log.d(TAG, "Сохранение пользователя в локальную БД: " + firebaseUser.getUid());
                 
-                // Инициализируем статистику пользователя через GamificationIntegrator
-                GamificationManager.initUserStats(firebaseUser.getUid());
-            } else {
-                // Обновляем данные существующего пользователя
-                existingUser.setUsername(firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : existingUser.getUsername());
-                existingUser.setEmail(firebaseUser.getEmail() != null ? firebaseUser.getEmail() : existingUser.getEmail());
-                existingUser.setAvatarUrl(firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : existingUser.getAvatarUrl());
-                userRepository.update(existingUser);
+                // Проверяем существует ли пользователь в локальной БД
+                UserEntity existingUser = userRepository.getUserById(firebaseUser.getUid());
+                
+                if (existingUser == null) {
+                    // Создаем нового пользователя
+                    UserEntity newUser = new UserEntity(
+                            firebaseUser.getUid(),
+                            firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : "User",
+                            firebaseUser.getEmail(),
+                            firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null,
+                            0, // Начальный опыт
+                            1  // Начальный уровень
+                    );
+                    userRepository.insert(newUser);
+                    
+                    Log.d(TAG, "Создан новый пользователь: " + newUser.getUsername());
+                    
+                    // Инициализируем статистику пользователя через GamificationManager
+                    GamificationManager.initUserStats(firebaseUser.getUid());
+                } else {
+                    // Обновляем данные существующего пользователя
+                    existingUser.setUsername(firebaseUser.getDisplayName() != null ? firebaseUser.getDisplayName() : existingUser.getUsername());
+                    existingUser.setEmail(firebaseUser.getEmail() != null ? firebaseUser.getEmail() : existingUser.getEmail());
+                    existingUser.setAvatarUrl(firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : existingUser.getAvatarUrl());
+                    userRepository.update(existingUser);
+                    
+                    Log.d(TAG, "Обновлен существующий пользователь: " + existingUser.getUsername());
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Ошибка сохранения пользователя в локальную БД", e);
             }
         });
     }
@@ -167,7 +223,9 @@ public class FirebaseAuthManager {
      * @return true, если пользователь вошел в систему
      */
     public boolean isUserSignedIn() {
-        return firebaseAuth.getCurrentUser() != null;
+        boolean isSignedIn = firebaseAuth.getCurrentUser() != null;
+        Log.d(TAG, "Проверка входа пользователя: " + isSignedIn);
+        return isSignedIn;
     }
 
     /**
@@ -175,7 +233,13 @@ public class FirebaseAuthManager {
      * @return текущий пользователь или null
      */
     public FirebaseUser getCurrentUser() {
-        return firebaseAuth.getCurrentUser();
+        FirebaseUser user = firebaseAuth.getCurrentUser();
+        if (user != null) {
+            Log.d(TAG, "Текущий пользователь: " + user.getUid() + " (" + user.getEmail() + ")");
+        } else {
+            Log.d(TAG, "Текущий пользователь: null");
+        }
+        return user;
     }
 
     /**
@@ -184,12 +248,14 @@ public class FirebaseAuthManager {
      * @param logoutCallback колбэк с результатом выхода
      */
     public void signOut(Activity activity, final LogoutCallback logoutCallback) {
+        Log.d(TAG, "Выполняется выход из аккаунта");
+        
         // Выход из Firebase
         firebaseAuth.signOut();
         
         // Выход из Google
-        googleSignInClient.signOut().addOnCompleteListener(activity,
-                task -> {
+        googleSignInClient.signOut().addOnCompleteListener(activity, task -> {
+                    Log.d(TAG, "Выход завершен");
                     if (logoutCallback != null) {
                         logoutCallback.onLogout();
                     }

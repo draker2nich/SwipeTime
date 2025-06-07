@@ -25,6 +25,7 @@ import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 import com.draker.swipetime.fragments.AchievementsFragment;
 import com.draker.swipetime.utils.FirebaseAuthManager;
+import com.draker.swipetime.utils.FirebaseDiagnostics;
 import com.draker.swipetime.utils.FirestoreDataManager;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.NetworkHelper;
@@ -197,6 +198,18 @@ public class AuthProfileFragment extends Fragment {
     }
     
     private void checkAuthState() {
+        // Запуск диагностики Firebase
+        FirebaseDiagnostics.DiagnosticsReport report = FirebaseDiagnostics.runFullDiagnostics(requireContext());
+        Log.d(TAG, report.getDetailedReport());
+        
+        // Проверка готовности системы
+        if (!report.isSystemReady()) {
+            Log.w(TAG, "Система не готова к работе: " + report.getProblems());
+            Toast.makeText(requireContext(), 
+                "Проблемы с конфигурацией Firebase: " + report.getProblems(), 
+                Toast.LENGTH_LONG).show();
+        }
+        
         isAuthenticated = authManager.isUserSignedIn();
         updateUI(isAuthenticated);
         
@@ -226,6 +239,12 @@ public class AuthProfileFragment extends Fragment {
                         achievementsCount.setText(completed + " / " + total);
                     });
                 });
+                
+                // Проверка и автоматическая загрузка данных из облака при наличии интернета
+                if (networkHelper.isInternetAvailable()) {
+                    Log.d(TAG, "Интернет доступен, проверяем данные в облаке");
+                    loadUserDataFromCloud(userId);
+                }
             }
         } else {
             Log.d(TAG, "Пользователь не вошел в систему, используется ID по умолчанию: " + gamificationViewModel.getCurrentUserId());
@@ -271,8 +290,13 @@ public class AuthProfileFragment extends Fragment {
                 isAuthenticated = true;
                 updateUI(true);
                 
-                // Загрузка данных пользователя
-                loadUserData(user.getUid());
+                // Загрузка данных пользователя из локальной базы
+                gamificationViewModel.loadUserData(user.getUid());
+                
+                // Автоматически загружаем данные из облака, если есть интернет
+                if (networkHelper.isInternetAvailable()) {
+                    loadUserDataFromCloud(user.getUid());
+                }
             }
 
             @Override
@@ -289,37 +313,42 @@ public class AuthProfileFragment extends Fragment {
     }
     
     /**
-     * Загрузка данных пользователя
+     * Загрузка данных пользователя из локальной базы данных
      */
     private void loadUserData(String userId) {
         // Загрузка данных из локальной базы данных
         gamificationViewModel.loadUserData(userId);
-        
-        // Если есть интернет, синхронизируем данные с облаком
-        if (networkHelper.isInternetAvailable()) {
-            firestoreManager.loadUserDataFromCloud(userId, new FirestoreDataManager.LoadCallback() {
-                @Override
-                public void onSuccess() {
-                    // Обновление UI после успешной загрузки
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            Toast.makeText(requireContext(), "Данные успешно загружены из облака", Toast.LENGTH_SHORT).show();
-                            gamificationViewModel.loadUserData(userId);
-                        });
-                    }
+        Log.d(TAG, "Загружены локальные данные пользователя: " + userId);
+    }
+    
+    /**
+     * Загрузка данных пользователя из облака
+     */
+    private void loadUserDataFromCloud(String userId) {
+        firestoreManager.loadUserDataFromCloud(userId, new FirestoreDataManager.LoadCallback() {
+            @Override
+            public void onSuccess() {
+                // Обновление UI после успешной загрузки
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        Log.d(TAG, "Данные успешно загружены из облака");
+                        Toast.makeText(requireContext(), "Данные обновлены из облака", Toast.LENGTH_SHORT).show();
+                        gamificationViewModel.loadUserData(userId);
+                    });
                 }
+            }
 
-                @Override
-                public void onFailure(String errorMessage) {
-                    // Ошибка загрузки данных
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> 
-                            Toast.makeText(requireContext(), "Ошибка загрузки данных: " + errorMessage, Toast.LENGTH_SHORT).show()
-                        );
-                    }
+            @Override
+            public void onFailure(String errorMessage) {
+                // Ошибка загрузки данных - не критично, локальные данные остаются
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        Log.w(TAG, "Не удалось загрузить данные из облака: " + errorMessage);
+                        // Не показываем Toast об ошибке, т.к. это не критично
+                    });
                 }
-            });
-        }
+            }
+        });
     }
     
     /**

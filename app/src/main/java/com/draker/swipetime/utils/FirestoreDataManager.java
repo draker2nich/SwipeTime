@@ -97,10 +97,18 @@ public class FirestoreDataManager {
 
         // Проверка авторизации
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-        if (currentUser == null || !currentUser.getUid().equals(userId)) {
-            Log.w(TAG, "Пользователь не авторизован или ID не совпадает");
+        if (currentUser == null) {
+            Log.w(TAG, "Пользователь не авторизован");
             if (syncCallback != null) {
                 syncCallback.onFailure("Пользователь не авторизован");
+            }
+            return;
+        }
+        
+        if (!currentUser.getUid().equals(userId)) {
+            Log.w(TAG, "ID пользователя не совпадает: текущий=" + currentUser.getUid() + ", запрошенный=" + userId);
+            if (syncCallback != null) {
+                syncCallback.onFailure("ID пользователя не совпадает");
             }
             return;
         }
@@ -108,6 +116,8 @@ public class FirestoreDataManager {
         // Запуск синхронизации в фоновом потоке
         executor.execute(() -> {
             try {
+                Log.d(TAG, "Начинаем синхронизацию данных пользователя: " + userId);
+                
                 // Загрузка локальных данных пользователя
                 UserEntity localUser = userRepository.getUserById(userId);
                 if (localUser == null) {
@@ -117,27 +127,10 @@ public class FirestoreDataManager {
                     }
                     return;
                 }
-
-                Log.d(TAG, "Начинаем синхронизацию данных пользователя: " + userId);
                 
                 // Загрузка и сохранение данных пользователя
-                syncUserProfile(localUser);
+                syncUserProfile(localUser, syncCallback);
                 
-                // Синхронизация контента
-                syncLikedContent(userId);
-                
-                // Синхронизация отзывов
-                syncReviews(userId);
-                
-                // Убираем запись о необходимости синхронизации
-                clearSyncFlag(userId);
-                
-                // Завершение синхронизации
-                if (syncCallback != null) {
-                    syncCallback.onSuccess();
-                }
-                
-                Log.d(TAG, "Синхронизация данных пользователя успешно завершена: " + userId);
             } catch (Exception e) {
                 Log.e(TAG, "Ошибка синхронизации данных", e);
                 
@@ -176,10 +169,14 @@ public class FirestoreDataManager {
     /**
      * Синхронизация профиля пользователя
      * @param localUser локальные данные пользователя
+     * @param syncCallback колбэк с результатом синхронизации
      */
-    private void syncUserProfile(UserEntity localUser) {
+    private void syncUserProfile(UserEntity localUser, final SyncCallback syncCallback) {
         if (localUser == null || localUser.getId() == null) {
             Log.e(TAG, "Ошибка синхронизации: данные пользователя недействительны");
+            if (syncCallback != null) {
+                syncCallback.onFailure("Данные пользователя недействительны");
+            }
             return;
         }
         
@@ -200,12 +197,31 @@ public class FirestoreDataManager {
                 .set(userData, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Профиль пользователя успешно синхронизирован");
+                    
+                    // Продолжаем синхронизацию остальных данных
                     syncUserStats(localUser.getId());
+                    syncLikedContent(localUser.getId());
+                    syncReviews(localUser.getId());
+                    
+                    // Убираем запись о необходимости синхронизации
+                    clearSyncFlag(localUser.getId());
+                    
+                    // Завершение синхронизации
+                    if (syncCallback != null) {
+                        syncCallback.onSuccess();
+                    }
+                    
+                    Log.d(TAG, "Синхронизация данных пользователя успешно завершена: " + localUser.getId());
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Ошибка сохранения профиля пользователя", e);
+                    
                     // Сохраняем информацию об ошибке для возможности повторной попытки позже
-                    // TODO: Добавить механизм отложенной синхронизации
+                    scheduleSync(localUser.getId());
+                    
+                    if (syncCallback != null) {
+                        syncCallback.onFailure("Ошибка сохранения профиля: " + e.getMessage());
+                    }
                 });
     }
 
