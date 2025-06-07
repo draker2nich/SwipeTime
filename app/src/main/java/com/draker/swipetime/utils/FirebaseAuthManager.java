@@ -77,7 +77,16 @@ public class FirebaseAuthManager {
      */
     public Intent getGoogleSignInIntent() {
         Log.d(TAG, "Создание Intent для Google Sign In");
-        return googleSignInClient.getSignInIntent();
+        try {
+            Intent intent = googleSignInClient.getSignInIntent();
+            Log.d(TAG, "Intent для Google Sign In создан успешно");
+            Log.d(TAG, "Intent action: " + (intent.getAction() != null ? intent.getAction() : "null"));
+            Log.d(TAG, "Intent component: " + (intent.getComponent() != null ? intent.getComponent().toString() : "null"));
+            return intent;
+        } catch (Exception e) {
+            Log.e(TAG, "ОШИБКА создания Intent для Google Sign In", e);
+            throw e;
+        }
     }
 
     /**
@@ -86,26 +95,48 @@ public class FirebaseAuthManager {
      * @param authCallback колбэк с результатом аутентификации
      */
     public void handleGoogleSignInResult(Intent data, final AuthCallback authCallback) {
+        Log.d(TAG, "=== НАЧАЛО handleGoogleSignInResult ===");
+        
         if (data == null) {
             Log.e(TAG, "Intent data is null");
             authCallback.onFailure("Данные Intent равны null");
             return;
         }
         
-        Log.d(TAG, "Обработка результата Google Sign In");
+        Log.d(TAG, "Intent data получены, обрабатываем Google Sign In");
         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+        
         try {
             // Успешный вход в Google
             GoogleSignInAccount account = task.getResult(ApiException.class);
+            
+            Log.d(TAG, "=== GOOGLE SIGN IN УСПЕШНО ===");
             Log.d(TAG, "Google Sign In успешно для аккаунта: " + account.getEmail());
+            Log.d(TAG, "Display Name: " + account.getDisplayName());
+            Log.d(TAG, "ID: " + account.getId());
             Log.d(TAG, "Получен ID Token: " + (account.getIdToken() != null ? "YES" : "NO"));
+            
+            if (account.getIdToken() == null) {
+                Log.e(TAG, "КРИТИЧЕСКАЯ ОШИБКА: ID Token равен null!");
+                authCallback.onFailure("Не удалось получить токен аутентификации от Google");
+                return;
+            }
+            
+            Log.d(TAG, "ID Token получен, начинаем аутентификацию с Firebase");
             firebaseAuthWithGoogle(account, authCallback);
+            
         } catch (ApiException e) {
             // Ошибка входа в Google
+            Log.e(TAG, "=== GOOGLE SIGN IN ОШИБКА ===");
             Log.e(TAG, "Google Sign In неудачно, код ошибки: " + e.getStatusCode() + ", сообщение: " + e.getMessage(), e);
+            Log.e(TAG, "Status message: " + e.getStatus());
             
             String errorMessage = getGoogleSignInErrorMessage(e.getStatusCode());
+            Log.e(TAG, "Переведенное сообщение ошибки: " + errorMessage);
             authCallback.onFailure(errorMessage);
+        } catch (Exception e) {
+            Log.e(TAG, "=== НЕОЖИДАННАЯ ОШИБКА ===", e);
+            authCallback.onFailure("Неожиданная ошибка: " + e.getMessage());
         }
     }
 
@@ -137,37 +168,50 @@ public class FirebaseAuthManager {
      * @param authCallback колбэк с результатом аутентификации
      */
     private void firebaseAuthWithGoogle(GoogleSignInAccount account, final AuthCallback authCallback) {
+        Log.d(TAG, "=== НАЧАЛО FIREBASE АУТЕНТИФИКАЦИИ ===");
         Log.d(TAG, "Начинаем аутентификацию в Firebase");
         
         String idToken = account.getIdToken();
         if (idToken == null) {
-            Log.e(TAG, "ID Token равен null");
+            Log.e(TAG, "ID Token равен null в firebaseAuthWithGoogle");
             authCallback.onFailure("Не удалось получить токен аутентификации от Google");
             return;
         }
         
+        Log.d(TAG, "Создаем AuthCredential с ID Token");
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
+        Log.d(TAG, "AuthCredential создан успешно");
+        
+        Log.d(TAG, "Запускаем signInWithCredential");
         firebaseAuth.signInWithCredential(credential)
                 .addOnCompleteListener(task -> {
+                    Log.d(TAG, "signInWithCredential завершен, проверяем результат");
+                    
                     if (task.isSuccessful()) {
                         // Успешная аутентификация
+                        Log.d(TAG, "=== FIREBASE АУТЕНТИФИКАЦИЯ УСПЕШНА ===");
                         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
                         if (firebaseUser != null) {
                             Log.d(TAG, "Firebase аутентификация успешна для пользователя: " + firebaseUser.getUid());
+                            Log.d(TAG, "Email: " + firebaseUser.getEmail());
+                            Log.d(TAG, "Display Name: " + firebaseUser.getDisplayName());
+                            
                             // Сохраняем или обновляем пользователя в локальной базе данных
                             saveUserToLocalDatabase(firebaseUser);
                             authCallback.onSuccess(firebaseUser);
                         } else {
-                            Log.e(TAG, "FirebaseUser равен null после успешной аутентификации");
+                            Log.e(TAG, "ОШИБКА: FirebaseUser равен null после успешной аутентификации");
                             authCallback.onFailure("Пользователь Firebase равен null");
                         }
                     } else {
                         // Ошибка аутентификации
                         Exception exception = task.getException();
+                        Log.e(TAG, "=== FIREBASE АУТЕНТИФИКАЦИЯ НЕУДАЧНА ===");
                         Log.w(TAG, "firebaseAuthWithGoogle:failure", exception);
                         
                         String errorMessage = "Ошибка аутентификации в Firebase";
                         if (exception != null) {
+                            Log.e(TAG, "Детали ошибки: " + exception.getClass().getSimpleName() + ": " + exception.getMessage());
                             errorMessage += ": " + exception.getMessage();
                         }
                         authCallback.onFailure(errorMessage);

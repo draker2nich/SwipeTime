@@ -84,24 +84,38 @@ public class AuthProfileFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        Log.d(TAG, "=== AuthProfileFragment onCreate ЗАПУЩЕН ===");
+        
         // Инициализация менеджеров
         authManager = FirebaseAuthManager.getInstance(requireContext());
         firestoreManager = FirestoreDataManager.getInstance(requireContext());
         networkHelper = NetworkHelper.getInstance(requireContext());
         
+        Log.d(TAG, "Менеджеры инициализированы");
+        
         // Настройка обработчика результата входа через Google
         signInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
+                    Log.d(TAG, "=== ПОЛУЧЕН РЕЗУЛЬТАТ ОТ GOOGLE SIGN IN ===");
+                    Log.d(TAG, "Result code: " + result.getResultCode());
+                    Log.d(TAG, "RESULT_OK = " + Activity.RESULT_OK);
+                    Log.d(TAG, "RESULT_CANCELED = " + Activity.RESULT_CANCELED);
+                    
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         Intent data = result.getData();
-                        Log.d(TAG, "Получен результат RESULT_OK от Google Sign In");
+                        Log.d(TAG, "Получен RESULT_OK, intent data: " + (data != null ? "есть" : "null"));
                         handleSignInResult(data);
+                    } else if (result.getResultCode() == Activity.RESULT_CANCELED) {
+                        Log.w(TAG, "Пользователь отменил вход");
+                        Toast.makeText(requireContext(), "Вход отменен пользователем", Toast.LENGTH_SHORT).show();
                     } else {
                         Log.e(TAG, "Google Sign In не удался, код результата: " + result.getResultCode());
-                        Toast.makeText(requireContext(), "Вход отменен или не удался", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Вход не удался (код: " + result.getResultCode() + ")", Toast.LENGTH_SHORT).show();
                     }
                 });
+        
+        Log.d(TAG, "=== AuthProfileFragment onCreate ЗАВЕРШЕН ===");
     }
 
     @Nullable
@@ -114,21 +128,31 @@ public class AuthProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
+        Log.d(TAG, "=== AuthProfileFragment onViewCreated ЗАПУЩЕН ===");
+        
         // Инициализация ViewModel
         profileViewModel = new ViewModelProvider(requireActivity()).get(ProfileViewModel.class);
         gamificationViewModel = new ViewModelProvider(requireActivity()).get(GamificationViewModel.class);
         
+        Log.d(TAG, "ViewModel инициализированы");
+        
         // Инициализация UI компонентов
         initializeViews(view);
+        Log.d(TAG, "UI компоненты инициализированы");
         
         // Настройка обработчиков событий
         setupClickListeners();
+        Log.d(TAG, "Click listeners настроены");
         
         // Проверка состояния авторизации
         checkAuthState();
+        Log.d(TAG, "Состояние авторизации проверено");
         
         // Наблюдение за состоянием сети
         observeNetworkState();
+        Log.d(TAG, "Наблюдение за сетью настроено");
+        
+        Log.d(TAG, "=== AuthProfileFragment onViewCreated ЗАВЕРШЕН ===");
     }
     
     /**
@@ -256,12 +280,25 @@ public class AuthProfileFragment extends Fragment {
      */
     private void signIn() {
         try {
+            Log.d(TAG, "=== НАЧАЛО ПРОЦЕССА ВХОДА ===");
             Log.d(TAG, "Запуск процесса входа через Google");
+            
             Intent signInIntent = authManager.getGoogleSignInIntent();
+            Log.d(TAG, "Intent для Google Sign In получен от authManager");
+            
+            if (signInIntent == null) {
+                Log.e(TAG, "ОШИБКА: Intent для Google Sign In равен null");
+                Toast.makeText(requireContext(), "Ошибка: не удалось создать Intent для входа", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            Log.d(TAG, "Запускаем signInLauncher.launch()");
             signInLauncher.launch(signInIntent);
+            Log.d(TAG, "signInLauncher.launch() выполнен");
+            
         } catch (Exception e) {
-            Log.e(TAG, "Ошибка при запуске входа через Google", e);
-            Toast.makeText(requireContext(), "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "ОШИБКА при запуске входа через Google", e);
+            Toast.makeText(requireContext(), "Ошибка: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
     
@@ -269,17 +306,22 @@ public class AuthProfileFragment extends Fragment {
      * Обработка результата входа через Google
      */
     private void handleSignInResult(Intent data) {
+        Log.d(TAG, "=== ОБРАБОТКА РЕЗУЛЬТАТА GOOGLE SIGN IN ===");
+        
         if (data == null) {
             Log.e(TAG, "Intent data is null in handleSignInResult");
             Toast.makeText(requireContext(), "Ошибка: данные Intent равны null", Toast.LENGTH_SHORT).show();
             return;
         }
         
+        Log.d(TAG, "Intent data получены успешно");
         Log.d(TAG, "Получен результат входа через Google, обрабатываем...");
+        
         authManager.handleGoogleSignInResult(data, new FirebaseAuthManager.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
                 // Успешный вход
+                Log.d(TAG, "=== УСПЕШНЫЙ ВХОД ===");
                 Log.d(TAG, "Вход выполнен успешно: " + user.getEmail());
                 Toast.makeText(requireContext(), "Добро пожаловать, " + user.getDisplayName(), Toast.LENGTH_SHORT).show();
                 
@@ -302,8 +344,9 @@ public class AuthProfileFragment extends Fragment {
             @Override
             public void onFailure(String errorMessage) {
                 // Ошибка входа
+                Log.e(TAG, "=== ОШИБКА ВХОДА ===");
                 Log.e(TAG, "Ошибка входа: " + errorMessage);
-                Toast.makeText(requireContext(), "Ошибка входа: " + errorMessage, Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Ошибка входа: " + errorMessage, Toast.LENGTH_LONG).show();
                 
                 // Обновление UI
                 isAuthenticated = false;

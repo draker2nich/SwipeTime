@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "305522930969-c24enc9p0cbn9o77i6hqjr05tveqbra9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.draker.swipetime",
+            "certificate_hash": "43200048a73cc17fee7bd5bad442ae482d874982"
+          }
+        },
+        {
           "client_id": "305522930969-tk9vj77cqfnplae8ms5tesurd2oh1mir.apps.googleusercontent.com",
           "client_type": 3
         }
