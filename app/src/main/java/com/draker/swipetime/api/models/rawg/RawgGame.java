@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 /**
- * Ультра-компактная модель игры из RAWG API
+ * Модель игры из RAWG API
  * Все вспомогательные классы встроены как внутренние
  */
 public class RawgGame {

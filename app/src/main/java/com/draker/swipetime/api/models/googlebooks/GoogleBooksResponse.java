@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 /**
- * Модель ответа на запрос списка книг из Google Books API
+ * Упрощенная модель ответа на запрос списка книг из Google Books API
+ * Содержит только необходимые поля для работы приложения
  */
 public class GoogleBooksResponse {
     @SerializedName("kind")
@@ -17,6 +18,22 @@ public class GoogleBooksResponse {
     @SerializedName("items")
     private List<GoogleBook> items;
 
+    /**
+     * Конструктор по умолчанию
+     */
+    public GoogleBooksResponse() {
+    }
+
+    /**
+     * Конструктор с параметрами
+     */
+    public GoogleBooksResponse(String kind, int totalItems, List<GoogleBook> items) {
+        this.kind = kind;
+        this.totalItems = totalItems;
+        this.items = items;
+    }
+
+    // Геттеры и сеттеры
     public String getKind() {
         return kind;
     }
@@ -39,5 +56,35 @@ public class GoogleBooksResponse {
 
     public void setItems(List<GoogleBook> items) {
         this.items = items;
+    }
+
+    /**
+     * Проверяет, есть ли результаты в ответе
+     */
+    public boolean hasResults() {
+        return items != null && !items.isEmpty();
+    }
+
+    /**
+     * Получить количество возвращенных элементов
+     */
+    public int getResultCount() {
+        return items != null ? items.size() : 0;
+    }
+
+    /**
+     * Проверяет, является ли ответ валидным
+     */
+    public boolean isValidResponse() {
+        return kind != null && (kind.contains("books#volumes") || kind.contains("books#volume"));
+    }
+
+    @Override
+    public String toString() {
+        return "GoogleBooksResponse{" +
+                "kind='" + kind + '\'' +
+                ", totalItems=" + totalItems +
+                ", resultCount=" + getResultCount() +
+                '}';
     }
 }
