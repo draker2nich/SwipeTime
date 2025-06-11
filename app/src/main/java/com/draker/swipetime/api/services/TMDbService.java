@@ -1,10 +1,8 @@
 package com.draker.swipetime.api.services;
 
 import com.draker.swipetime.api.models.tmdb.TMDbCredits;
-import com.draker.swipetime.api.models.tmdb.TMDbMovie;
-import com.draker.swipetime.api.models.tmdb.TMDbMovieResponse;
-import com.draker.swipetime.api.models.tmdb.TMDbTVShow;
-import com.draker.swipetime.api.models.tmdb.TMDbTVShowResponse;
+import com.draker.swipetime.api.models.tmdb.TMDbContent;
+import com.draker.swipetime.api.models.tmdb.TMDbResponse;
 
 import io.reactivex.rxjava3.core.Observable;
 import retrofit2.http.GET;
@@ -13,12 +11,18 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 /**
- * Интерфейс для работы с TMDB API
+ * Обновленный интерфейс для работы с TMDB API
+ * Использует новые универсальные модели
  */
 public interface TMDbService {
+
+    // ===============================
+    // МЕТОДЫ ДЛЯ ФИЛЬМОВ
+    // ===============================
+
     // Получение популярных фильмов
     @GET("movie/popular")
-    Observable<TMDbMovieResponse> getPopularMovies(
+    Observable<TMDbResponse> getPopularMovies(
             @Header("Authorization") String apiKey,
             @Query("language") String language,
             @Query("page") int page
@@ -26,7 +30,7 @@ public interface TMDbService {
 
     // Поиск фильмов
     @GET("search/movie")
-    Observable<TMDbMovieResponse> searchMovies(
+    Observable<TMDbResponse> searchMovies(
             @Header("Authorization") String apiKey,
             @Query("query") String query,
             @Query("language") String language,
@@ -35,7 +39,7 @@ public interface TMDbService {
 
     // Получение подробной информации о фильме
     @GET("movie/{movie_id}")
-    Observable<TMDbMovie> getMovieDetails(
+    Observable<TMDbContent> getMovieDetails(
             @Header("Authorization") String apiKey,
             @Path("movie_id") int movieId,
             @Query("language") String language
@@ -48,9 +52,13 @@ public interface TMDbService {
             @Path("movie_id") int movieId
     );
 
+    // ===============================
+    // МЕТОДЫ ДЛЯ СЕРИАЛОВ
+    // ===============================
+
     // Получение популярных сериалов
     @GET("tv/popular")
-    Observable<TMDbTVShowResponse> getPopularTVShows(
+    Observable<TMDbResponse> getPopularTVShows(
             @Header("Authorization") String apiKey,
             @Query("language") String language,
             @Query("page") int page
@@ -58,7 +66,7 @@ public interface TMDbService {
 
     // Поиск сериалов
     @GET("search/tv")
-    Observable<TMDbTVShowResponse> searchTVShows(
+    Observable<TMDbResponse> searchTVShows(
             @Header("Authorization") String apiKey,
             @Query("query") String query,
             @Query("language") String language,
@@ -67,7 +75,7 @@ public interface TMDbService {
 
     // Получение подробной информации о сериале
     @GET("tv/{tv_id}")
-    Observable<TMDbTVShow> getTVShowDetails(
+    Observable<TMDbContent> getTVShowDetails(
             @Header("Authorization") String apiKey,
             @Path("tv_id") int tvId,
             @Query("language") String language
