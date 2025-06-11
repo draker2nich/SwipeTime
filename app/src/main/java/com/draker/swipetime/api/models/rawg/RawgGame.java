@@ -1,11 +1,11 @@
 package com.draker.swipetime.api.models.rawg;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 /**
- * Модель игры из RAWG API
+ * Ультра-компактная модель игры из RAWG API
+ * Все вспомогательные классы встроены как внутренние
  */
 public class RawgGame {
     @SerializedName("id")
@@ -13,9 +13,6 @@ public class RawgGame {
 
     @SerializedName("name")
     private String name;
-
-    @SerializedName("description")
-    private String description;
 
     @SerializedName("description_raw")
     private String descriptionRaw;
@@ -29,227 +26,107 @@ public class RawgGame {
     @SerializedName("rating")
     private float rating;
 
-    @SerializedName("ratings_count")
-    private int ratingsCount;
-
     @SerializedName("esrb_rating")
-    private RawgESRBRating esrbRating;
+    private SimpleItem esrbRating;
 
     @SerializedName("platforms")
-    private List<RawgPlatformWrapper> platforms;
+    private List<PlatformWrapper> platforms;
 
     @SerializedName("genres")
-    private List<RawgGenre> genres;
+    private List<SimpleItem> genres;
 
     @SerializedName("developers")
-    private List<RawgDeveloper> developers;
+    private List<SimpleItem> developers;
 
     @SerializedName("publishers")
-    private List<RawgPublisher> publishers;
+    private List<SimpleItem> publishers;
 
-    public int getId() {
-        return id;
-    }
+    // Конструктор
+    public RawgGame() {}
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    // Основные геттеры
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getDescriptionRaw() { return descriptionRaw; }
+    public String getBackgroundImage() { return backgroundImage; }
+    public String getReleased() { return released; }
+    public float getRating() { return rating; }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getDescriptionRaw() {
-        return descriptionRaw;
-    }
-
-    public void setDescriptionRaw(String descriptionRaw) {
-        this.descriptionRaw = descriptionRaw;
-    }
-
-    public String getBackgroundImage() {
-        return backgroundImage;
-    }
-
-    public void setBackgroundImage(String backgroundImage) {
-        this.backgroundImage = backgroundImage;
-    }
-
-    public String getReleased() {
-        return released;
-    }
-
-    public void setReleased(String released) {
-        this.released = released;
-    }
-
-    public float getRating() {
-        return rating;
-    }
-
-    public void setRating(float rating) {
-        this.rating = rating;
-    }
-
-    public int getRatingsCount() {
-        return ratingsCount;
-    }
-
-    public void setRatingsCount(int ratingsCount) {
-        this.ratingsCount = ratingsCount;
-    }
-
-    public RawgESRBRating getEsrbRating() {
-        return esrbRating;
-    }
-
-    public void setEsrbRating(RawgESRBRating esrbRating) {
-        this.esrbRating = esrbRating;
-    }
-
-    public List<RawgPlatformWrapper> getPlatforms() {
-        return platforms;
-    }
-
-    public void setPlatforms(List<RawgPlatformWrapper> platforms) {
-        this.platforms = platforms;
-    }
-
-    public List<RawgGenre> getGenres() {
-        return genres;
-    }
-
-    public void setGenres(List<RawgGenre> genres) {
-        this.genres = genres;
-    }
-
-    public List<RawgDeveloper> getDevelopers() {
-        return developers;
-    }
-
-    public void setDevelopers(List<RawgDeveloper> developers) {
-        this.developers = developers;
-    }
-
-    public List<RawgPublisher> getPublishers() {
-        return publishers;
-    }
-
-    public void setPublishers(List<RawgPublisher> publishers) {
-        this.publishers = publishers;
-    }
-
-    /**
-     * Получить имена разработчиков в виде строки, разделенной запятыми
-     * @return строка с именами разработчиков
-     */
+    // Utility методы для получения строк
     public String getDeveloperNames() {
-        if (developers == null || developers.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < developers.size(); i++) {
-            result.append(developers.get(i).getName());
-            if (i < developers.size() - 1) {
-                result.append(", ");
-            }
-        }
-        return result.toString();
+        return joinSimpleItems(developers);
     }
 
-    /**
-     * Получить имена издателей в виде строки, разделенной запятыми
-     * @return строка с именами издателей
-     */
     public String getPublisherNames() {
-        if (publishers == null || publishers.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < publishers.size(); i++) {
-            result.append(publishers.get(i).getName());
-            if (i < publishers.size() - 1) {
-                result.append(", ");
-            }
-        }
-        return result.toString();
+        return joinSimpleItems(publishers);
     }
 
-    /**
-     * Получить платформы в виде строки, разделенной запятыми
-     * @return строка с названиями платформ
-     */
     public String getPlatformNames() {
-        if (platforms == null || platforms.isEmpty()) {
-            return "";
-        }
+        if (platforms == null || platforms.isEmpty()) return "";
 
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < platforms.size(); i++) {
-            result.append(platforms.get(i).getPlatform().getName());
-            if (i < platforms.size() - 1) {
-                result.append(", ");
+            String name = platforms.get(i).getPlatformName();
+            if (name != null && !name.isEmpty()) {
+                result.append(name);
+                if (i < platforms.size() - 1) result.append(", ");
             }
         }
         return result.toString();
     }
 
-    /**
-     * Получить жанры в виде строки, разделенной запятыми
-     * @return строка с названиями жанров
-     */
     public String getGenreNames() {
-        if (genres == null || genres.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < genres.size(); i++) {
-            result.append(genres.get(i).getName());
-            if (i < genres.size() - 1) {
-                result.append(", ");
-            }
-        }
-        return result.toString();
+        return joinSimpleItems(genres);
     }
 
-    /**
-     * Получить возрастной рейтинг
-     * @return строка с возрастным рейтингом или "Not Rated"
-     */
     public String getEsrbRatingName() {
-        if (esrbRating == null) {
-            return "Not Rated";
-        }
-        return esrbRating.getName();
+        return esrbRating != null ? esrbRating.name : "Not Rated";
     }
 
-    /**
-     * Получить год выпуска из даты
-     * @return год выпуска или 0, если дата не указана
-     */
     public int getReleaseYear() {
-        if (released == null || released.isEmpty()) {
-            return 0;
-        }
+        if (released == null || released.length() < 4) return 0;
         try {
             return Integer.parseInt(released.substring(0, 4));
         } catch (Exception e) {
             return 0;
         }
     }
+
+    // Приватный utility метод
+    private String joinSimpleItems(List<SimpleItem> items) {
+        if (items == null || items.isEmpty()) return "";
+
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).name != null) {
+                result.append(items.get(i).name);
+                if (i < items.size() - 1) result.append(", ");
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * Универсальный класс для простых элементов (жанр, разработчик, издатель, рейтинг)
+     */
+    public static class SimpleItem {
+        @SerializedName("id")
+        public int id;
+
+        @SerializedName("name")
+        public String name;
+    }
+
+    /**
+     * Обертка для платформы
+     */
+    public static class PlatformWrapper {
+        @SerializedName("platform")
+        private SimpleItem platform;
+
+        public String getPlatformName() {
+            return platform != null ? platform.name : "";
+        }
+    }
 }
+

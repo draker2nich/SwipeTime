@@ -1,54 +1,26 @@
 package com.draker.swipetime.api.models.rawg;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 /**
- * Модель ответа на запрос списка игр из RAWG API
+ * Ультра-компактная модель ответа RAWG API
  */
 public class RawgGameResponse {
     @SerializedName("count")
-    private int count;
+    public int count;
 
     @SerializedName("next")
-    private String next;
-
-    @SerializedName("previous")
-    private String previous;
+    public String next;
 
     @SerializedName("results")
-    private List<RawgGame> results;
+    public List<RawgGame> results;
 
-    public int getCount() {
-        return count;
+    public boolean hasNextPage() {
+        return next != null && !next.isEmpty();
     }
 
-    public void setCount(int count) {
-        this.count = count;
-    }
-
-    public String getNext() {
-        return next;
-    }
-
-    public void setNext(String next) {
-        this.next = next;
-    }
-
-    public String getPrevious() {
-        return previous;
-    }
-
-    public void setPrevious(String previous) {
-        this.previous = previous;
-    }
-
-    public List<RawgGame> getResults() {
-        return results;
-    }
-
-    public void setResults(List<RawgGame> results) {
-        this.results = results;
+    public boolean isEmpty() {
+        return results == null || results.isEmpty();
     }
 }

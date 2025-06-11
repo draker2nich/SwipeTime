@@ -107,8 +107,8 @@ public class RawgRepository {
      */
     private List<GameEntity> convertGameResponseToEntities(RawgGameResponse response) {
         List<GameEntity> games = new ArrayList<>();
-        if (response != null && response.getResults() != null) {
-            for (RawgGame game : response.getResults()) {
+        if (response != null && response.results != null) {
+            for (RawgGame game : response.results) {
                 games.add(convertGameToEntity(game));
             }
         }
