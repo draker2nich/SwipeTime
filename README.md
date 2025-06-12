@@ -2,8 +2,9 @@
 
 > Android-приложение для выбора развлекательного контента через свайпы
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/a2cbdc70-276b-4ff0-9ce8-68edcf2dc4c0" width="300" alt="Скриншот 1">
-  <img src="https://github.com/user-attachments/assets/5934bc3e-470d-4520-acbc-59f9835ffda1" width="300" alt="Скриншот 2">
+  <img src="![5355215295284903522](https://github.com/user-attachments/assets/fdcc92c9-31b8-4731-9da9-8012f83107d0)" width="300" alt="Скриншот 1">
+  <img src="![5355215295284903522 (1)](https://github.com/user-attachments/assets/d733c91a-f3ba-4c1b-8763-63620aa2efaf)
+" width="300" alt="Скриншот 2">
 </div>
 
 ## 🎯 Что это такое?
