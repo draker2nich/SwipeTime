@@ -11,46 +11,35 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.draker.swipetime.database.dao.AchievementDao;
 import com.draker.swipetime.database.dao.AnimeDao;
 import com.draker.swipetime.database.dao.BookDao;
-import com.draker.swipetime.database.dao.ChallengeMilestoneDao;
-import com.draker.swipetime.database.dao.CollectibleItemDao;
+import com.draker.swipetime.database.dao.AchievementDao;
+import com.draker.swipetime.database.dao.AnimeDao;
+import com.draker.swipetime.database.dao.BookDao;
 import com.draker.swipetime.database.dao.ContentDao;
-import com.draker.swipetime.database.dao.DailyQuestDao;
 import com.draker.swipetime.database.dao.GameDao;
 import com.draker.swipetime.database.dao.MovieDao;
 import com.draker.swipetime.database.dao.ReviewDao;
-import com.draker.swipetime.database.dao.SeasonalEventDao;
 import com.draker.swipetime.database.dao.TVShowDao;
-import com.draker.swipetime.database.dao.ThematicChallengeDao;
 import com.draker.swipetime.database.dao.UserAchievementDao;
-import com.draker.swipetime.database.dao.UserChallengeProgressDao;
 import com.draker.swipetime.database.dao.UserDao;
-import com.draker.swipetime.database.dao.UserItemDao;
 import com.draker.swipetime.database.dao.UserPreferencesDao;
-import com.draker.swipetime.database.dao.UserQuestProgressDao;
-import com.draker.swipetime.database.dao.UserRankDao;
-import com.draker.swipetime.database.dao.UserRankProgressDao;
 import com.draker.swipetime.database.dao.UserStatsDao;
 import com.draker.swipetime.database.entities.AchievementEntity;
 import com.draker.swipetime.database.entities.AnimeEntity;
 import com.draker.swipetime.database.entities.BookEntity;
-import com.draker.swipetime.database.entities.ChallengeMilestoneEntity;
-import com.draker.swipetime.database.entities.CollectibleItemEntity;
+import com.draker.swipetime.database.entities.AchievementEntity;
+import com.draker.swipetime.database.entities.AnimeEntity;
+import com.draker.swipetime.database.entities.BookEntity;
+import com.draker.swipetime.database.entities.AchievementEntity;
+import com.draker.swipetime.database.entities.AnimeEntity;
+import com.draker.swipetime.database.entities.BookEntity;
 import com.draker.swipetime.database.entities.ContentEntity;
-import com.draker.swipetime.database.entities.DailyQuestEntity;
 import com.draker.swipetime.database.entities.GameEntity;
 import com.draker.swipetime.database.entities.MovieEntity;
 import com.draker.swipetime.database.entities.ReviewEntity;
-import com.draker.swipetime.database.entities.SeasonalEventEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
-import com.draker.swipetime.database.entities.ThematicChallengeEntity;
 import com.draker.swipetime.database.entities.UserAchievementCrossRef;
-import com.draker.swipetime.database.entities.UserChallengeProgressEntity;
 import com.draker.swipetime.database.entities.UserEntity;
-import com.draker.swipetime.database.entities.UserItemEntity;
 import com.draker.swipetime.database.entities.UserPreferencesEntity;
-import com.draker.swipetime.database.entities.UserQuestProgressEntity;
-import com.draker.swipetime.database.entities.UserRankEntity;
-import com.draker.swipetime.database.entities.UserRankProgressEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 
 /**
@@ -69,19 +58,9 @@ import com.draker.swipetime.database.entities.UserStatsEntity;
         UserAchievementCrossRef.class,
         ReviewEntity.class,
         UserStatsEntity.class,
-        UserPreferencesEntity.class,
-        DailyQuestEntity.class,
-        UserQuestProgressEntity.class,
-        SeasonalEventEntity.class,
-        CollectibleItemEntity.class,
-        UserItemEntity.class,
-        ThematicChallengeEntity.class,
-        ChallengeMilestoneEntity.class,
-        UserChallengeProgressEntity.class,
-        UserRankEntity.class,
-        UserRankProgressEntity.class
+        UserPreferencesEntity.class
     },
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -489,6 +468,23 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    // Миграция с версии 6 на версию 7 - удаление избыточных таблиц геймификации
+    private static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            // Удаляем таблицы связанные с удаленными Entity
+            database.execSQL("DROP TABLE IF EXISTS `daily_quests`");
+            database.execSQL("DROP TABLE IF EXISTS `seasonal_events`");
+            database.execSQL("DROP TABLE IF EXISTS `collectible_items`");
+            database.execSQL("DROP TABLE IF EXISTS `user_items`");
+            database.execSQL("DROP TABLE IF EXISTS `thematic_challenges`");
+            database.execSQL("DROP TABLE IF EXISTS `challenge_milestones`");
+            database.execSQL("DROP TABLE IF EXISTS `user_challenge_progress`");
+            database.execSQL("DROP TABLE IF EXISTS `user_ranks`");
+            database.execSQL("DROP TABLE IF EXISTS `user_rank_progress`");
+        }
+    };
+
     // DAOs
     public abstract ContentDao contentDao();
     public abstract MovieDao movieDao();
@@ -502,18 +498,6 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract ReviewDao reviewDao();
     public abstract UserStatsDao userStatsDao();
     public abstract UserPreferencesDao userPreferencesDao();
-    
-    // DAOs для расширенной геймификации
-    public abstract DailyQuestDao dailyQuestDao();
-    public abstract UserQuestProgressDao userQuestProgressDao();
-    public abstract SeasonalEventDao seasonalEventDao();
-    public abstract CollectibleItemDao collectibleItemDao();
-    public abstract UserItemDao userItemDao();
-    public abstract ThematicChallengeDao thematicChallengeDao();
-    public abstract ChallengeMilestoneDao challengeMilestoneDao();
-    public abstract UserChallengeProgressDao userChallengeProgressDao();
-    public abstract UserRankDao userRankDao();
-    public abstract UserRankProgressDao userRankProgressDao();
 
     // Singleton паттерн для доступа к базе данных
     public static synchronized AppDatabase getInstance(Context context) {
@@ -524,7 +508,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 DATABASE_NAME
             )
             .fallbackToDestructiveMigration() // При изменении схемы БД удаляем старую и создаем новую
-            .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6) // Добавляем миграции
+            .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7) // Добавляем миграции
             .allowMainThreadQueries() // ВНИМАНИЕ: Временное решение для прототипа. В production-версии нужно использовать асинхронные запросы или LiveData
             .build();
         }

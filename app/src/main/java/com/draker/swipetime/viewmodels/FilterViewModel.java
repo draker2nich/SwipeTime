@@ -10,7 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.draker.swipetime.database.entities.UserPreferencesEntity;
 import com.draker.swipetime.repository.UserPreferencesRepository;
-import com.draker.swipetime.utils.GamificationIntegrator;
+// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -69,8 +69,8 @@ public class FilterViewModel extends AndroidViewModel {
         super(application);
         preferencesRepository = new UserPreferencesRepository(application);
         
-        // Получаем ID текущего пользователя
-        currentUserId = GamificationIntegrator.getCurrentUserId(application);
+        // Получаем ID текущего пользователя (заглушка вместо удаленного GamificationIntegrator)
+        currentUserId = "user_1";
         Log.d(TAG, "Используется ID пользователя для фильтров: " + currentUserId);
         
         // Загрузка сохраненных настроек пользователя
@@ -145,8 +145,8 @@ public class FilterViewModel extends AndroidViewModel {
      * Сохранение настроек пользователя в репозиторий
      */
     public void saveUserPreferences() {
-        // Проверяем, что ID пользователя актуальный
-        String userId = GamificationIntegrator.getCurrentUserId(getApplication());
+        // Проверяем, что ID пользователя актуальный (заглушка вместо удаленного GamificationIntegrator)
+        String userId = "user_1";
         if (!userId.equals(currentUserId)) {
             currentUserId = userId;
             Log.d(TAG, "ID пользователя обновлен перед сохранением настроек: " + userId);

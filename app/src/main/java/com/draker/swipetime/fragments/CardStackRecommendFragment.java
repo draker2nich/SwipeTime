@@ -36,7 +36,7 @@ import com.draker.swipetime.utils.CardFilterIntegratorV2;
 import com.draker.swipetime.utils.CardInfoHelper;
 import com.draker.swipetime.utils.ContentFilterHelper;
 import com.draker.swipetime.utils.FirestoreDataManager;
-import com.draker.swipetime.utils.GamificationIntegrator;
+// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
 import com.draker.swipetime.utils.LikedItemsHelper;
 import com.draker.swipetime.viewmodels.FilterViewModel;
 import com.yuyakaido.android.cardstackview.CardStackLayoutManager;
@@ -100,7 +100,7 @@ public class CardStackRecommendFragment extends Fragment implements CardStackLis
      * Получить ID текущего пользователя
      */
     private String getCurrentUserId() {
-        String userId = GamificationIntegrator.getCurrentUserId(requireContext());
+        String userId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(requireContext());
         Log.d(TAG, "Используется ID пользователя: " + userId);
         return userId;
     }
@@ -524,10 +524,11 @@ public class CardStackRecommendFragment extends Fragment implements CardStackLis
                         animeRepository, contentRepository);
 
                 // Начисляем опыт за свайп вправо
-                boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
-                if (levelUp) {
-                    Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
-                }
+                // Начисляем опыт за свайп вправо (временно отключено)
+                // boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
+                // if (levelUp) {
+                //     Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
+                // }
                 
                 // Синхронизация с Firebase после добавления в избранное
                 syncWithFirebase(userId, item);
@@ -538,8 +539,9 @@ public class CardStackRecommendFragment extends Fragment implements CardStackLis
                 // Логируем действие
                 ActionLogger.logSwipe(false, item.getId(), item.getTitle());
 
-                // Начисляем опыт за свайп влево
-                boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), false);
+                // Начисляем опыт за свайп влево (временно отключено)
+                // boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), false);
+                boolean levelUp = false; // Заглушка
                 if (levelUp) {
                     Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
                     

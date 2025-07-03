@@ -11,10 +11,8 @@ import com.draker.swipetime.database.DatabaseCleaner;
 import com.draker.swipetime.database.DbCleanerUtil;
 import com.draker.swipetime.database.entities.ContentEntity;
 import com.draker.swipetime.repository.ContentRepository;
-import com.draker.swipetime.utils.AchievementNotifier;
 import com.draker.swipetime.utils.ContentShuffler;
 import com.draker.swipetime.utils.FirebaseAuthManager;
-import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.ImageCacheManager;
 import com.draker.swipetime.utils.PersistentFavoritesManager;
@@ -58,9 +56,6 @@ public class SwipeTimeApplication extends Application {
             // Заполнить базу данных базовыми данными (только пользователя)
             DataGenerator.populateDatabase(this);
             
-            // Инициализация системы геймификации
-            GamificationIntegrator.ensureUserInitialized(this);
-            
             // Восстанавливаем состояние избранного
             PersistentFavoritesManager favManager = new PersistentFavoritesManager(this);
             favManager.restoreFavoritesState();
@@ -94,7 +89,6 @@ public class SwipeTimeApplication extends Application {
                 // Пересоздаем базу данных
                 if (deleted) {
                     DataGenerator.populateDatabase(this);
-                    GamificationIntegrator.ensureUserInitialized(this);
                     Log.d(TAG, "База данных успешно пересоздана");
                     
                     // Также инициализируем интеграцию внешних API

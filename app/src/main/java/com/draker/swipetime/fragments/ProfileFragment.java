@@ -20,8 +20,8 @@ import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 import com.draker.swipetime.fragments.AchievementsFragment;
 import com.draker.swipetime.utils.GamificationManager;
-import com.draker.swipetime.utils.AchievementInitializer;
-import com.draker.swipetime.utils.AchievementDiagnostics;
+// import com.draker.swipetime.utils.AchievementInitializer; // Класс удален в рамках рефакторинга
+// import com.draker.swipetime.utils.AchievementDiagnostics; // Класс удален в рамках рефакторинга
 import com.draker.swipetime.utils.XpLevelCalculator;
 
 import android.app.AlertDialog;
@@ -157,52 +157,28 @@ public class ProfileFragment extends Fragment {
         });
         
         initializeAchievementsButton.setOnClickListener(v -> {
-            // Принудительно инициализируем достижения
-            AchievementInitializer.forceInitializeAchievements(requireContext(), new AchievementInitializer.InitializationCallback() {
-                @Override
-                public void onInitialized(boolean success, int achievementsCount) {
-                    requireActivity().runOnUiThread(() -> {
-                        if (success) {
-                            Toast.makeText(requireContext(), 
-                                "Достижения инициализированы: " + achievementsCount, 
-                                Toast.LENGTH_LONG).show();
-                            // Перезагружаем данные
-                            loadUserData();
-                        } else {
-                            Toast.makeText(requireContext(), 
-                                "Ошибка инициализации достижений", 
-                                Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }
-            });
+            // Система достижений временно отключена
+            Toast.makeText(requireContext(), 
+                "Система достижений временно отключена", 
+                Toast.LENGTH_LONG).show();
         });
         
         diagnosticsButton.setOnClickListener(v -> {
-            // Запускаем диагностику
-            String diagnosticsReport = AchievementDiagnostics.runFullDiagnostics(requireContext());
-            
-            // Показываем результат в диалоге
-            new AlertDialog.Builder(requireContext())
-                .setTitle("Диагностика достижений")
-                .setMessage(diagnosticsReport)
-                .setPositiveButton("OK", null)
-                .setNeutralButton("Копировать", (dialog, which) -> {
-                    // Можно добавить копирование в буфер обмена
-                    Toast.makeText(requireContext(), "Отчет выведен в логи", Toast.LENGTH_SHORT).show();
-                    android.util.Log.d("AchievementDiagnostics", diagnosticsReport);
-                })
-                .show();
+            // Диагностика достижений временно отключена
+            Toast.makeText(requireContext(), 
+                "Диагностика достижений временно отключена", 
+                Toast.LENGTH_SHORT).show();
         });
         
         forceSyncButton.setOnClickListener(v -> {
-            // Принудительная синхронизация
+            // Принудительная синхронизация (временно отключена)
             new Thread(() -> {
-                int syncedCount = AchievementDiagnostics.forceSyncAchievements(requireContext());
+                // int syncedCount = AchievementDiagnostics.forceSyncAchievements(requireContext()); // Временно отключено
+                int syncedCount = 0; // Заглушка
                 
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(requireContext(), 
-                        "Синхронизировано достижений: " + syncedCount, 
+                        "Функция синхронизации временно отключена", 
                         Toast.LENGTH_LONG).show();
                     // Перезагружаем данные
                     loadUserData();

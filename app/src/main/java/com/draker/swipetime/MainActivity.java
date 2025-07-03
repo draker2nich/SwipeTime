@@ -9,7 +9,6 @@ import com.draker.swipetime.fragments.AuthProfileFragment;
 import com.draker.swipetime.fragments.CategoriesFragment;
 import com.draker.swipetime.fragments.LikedContentFragment;
 import com.draker.swipetime.utils.FragmentMigrationHelper;
-import com.draker.swipetime.utils.GamificationIntegrator;
 import com.draker.swipetime.utils.HapticFeedbackManager;
 import com.draker.swipetime.utils.InfiniteContentManager;
 import com.draker.swipetime.utils.NetworkHelper;
@@ -37,9 +36,6 @@ public class MainActivity extends AppCompatActivity {
         // Инициализируем помощники UI/UX
         hapticManager = HapticFeedbackManager.getInstance(this);
 
-        // Инициализация системы геймификации
-        GamificationIntegrator.ensureUserInitialized(getApplicationContext());
-        
         // Инициализация мониторинга сети
         networkHelper = NetworkHelper.getInstance(this);
         

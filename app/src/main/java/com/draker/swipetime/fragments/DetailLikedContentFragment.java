@@ -31,7 +31,7 @@ import com.draker.swipetime.repository.TVShowRepository;
 import com.draker.swipetime.repository.UserRepository;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.draker.swipetime.utils.ActionLogger;
-import com.draker.swipetime.utils.GamificationIntegrator;
+// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.LikedItemsHelper;
 import com.google.android.material.textfield.TextInputEditText;
@@ -97,7 +97,7 @@ public class DetailLikedContentFragment extends Fragment {
         }
 
         // Получаем ID текущего пользователя
-        currentUserId = GamificationIntegrator.getCurrentUserId(requireContext());
+        currentUserId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(requireContext());
         Log.d(TAG, "Используется ID пользователя: " + currentUserId);
 
         // Инициализация репозиториев
@@ -434,8 +434,9 @@ public class DetailLikedContentFragment extends Fragment {
      */
     private void addExperienceForRating(float rating) {
         try {
-            // Используем GamificationIntegrator для начисления опыта
-            boolean levelUp = GamificationIntegrator.registerRating(getContext(), contentItem.getId(), contentItem.getTitle(), rating);
+            // Используем GamificationIntegrator для начисления опыта (временно отключено)
+            // boolean levelUp = GamificationIntegrator.registerRating(getContext(), contentItem.getId(), contentItem.getTitle(), rating);
+            boolean levelUp = false; // Заглушка
             
             if (levelUp) {
                 Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
@@ -450,8 +451,9 @@ public class DetailLikedContentFragment extends Fragment {
      */
     private void addExperienceForReview() {
         try {
-            // Используем GamificationIntegrator для начисления опыта
-            boolean levelUp = GamificationIntegrator.registerReview(getContext(), contentItem.getId(), contentItem.getTitle());
+            // Используем GamificationIntegrator для начисления опыта (временно отключено)
+            // boolean levelUp = GamificationIntegrator.registerReview(getContext(), contentItem.getId(), contentItem.getTitle());
+            boolean levelUp = false; // Заглушка
             
             if (levelUp) {
                 Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();
@@ -466,13 +468,14 @@ public class DetailLikedContentFragment extends Fragment {
      */
     private void addExperienceForCompletion() {
         try {
-            // Используем GamificationIntegrator для начисления опыта
-            boolean levelUp = GamificationIntegrator.registerCompletion(
-                getContext(), 
-                contentItem.getId(), 
-                contentItem.getTitle(),
-                contentItem.getCategory()
-            );
+            // Используем GamificationIntegrator для начисления опыта (временно отключено)
+            // boolean levelUp = GamificationIntegrator.registerCompletion(
+            //     getContext(), 
+            //     contentItem.getId(), 
+            //     contentItem.getTitle(),
+            //     contentItem.getCategory()
+            // );
+            boolean levelUp = false; // Заглушка
             
             if (levelUp) {
                 Toast.makeText(getContext(), "Поздравляем! Вы повысили свой уровень!", Toast.LENGTH_SHORT).show();

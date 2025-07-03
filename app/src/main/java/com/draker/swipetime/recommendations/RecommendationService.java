@@ -9,7 +9,7 @@ import com.draker.swipetime.models.ContentItem;
 import com.draker.swipetime.repository.ContentRepository;
 import com.draker.swipetime.repository.UserPreferencesRepository;
 import com.draker.swipetime.repository.UserRepository;
-import com.draker.swipetime.utils.GamificationIntegrator;
+// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +53,7 @@ public class RecommendationService {
      * @return список рекомендуемых элементов
      */
     public List<ContentItem> getRecommendationsForCurrentUser(Context context, String category, int limit) {
-        String userId = GamificationIntegrator.getCurrentUserId(context);
+        String userId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(context);
         return recommendationManager.getRecommendations(userId, category, limit);
     }
 
@@ -63,7 +63,7 @@ public class RecommendationService {
      * @param context контекст
      */
     public void updateCurrentUserPreferences(Context context) {
-        String userId = GamificationIntegrator.getCurrentUserId(context);
+        String userId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(context);
         recommendationManager.analyzeAndUpdateUserPreferences(userId);
     }
 
@@ -85,7 +85,7 @@ public class RecommendationService {
      */
     public void handleSwipeEvent(Context context, String contentId, boolean liked) {
         // Получаем ID текущего пользователя
-        String userId = GamificationIntegrator.getCurrentUserId(context);
+        String userId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(context);
 
         // Если это лайк, обновляем предпочтения пользователя
         if (liked) {
@@ -124,7 +124,7 @@ public class RecommendationService {
      * @return отсортированный список
      */
     public List<ContentItem> sortByRelevance(Context context, List<ContentItem> contentItems) {
-        String userId = GamificationIntegrator.getCurrentUserId(context);
+        String userId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(context);
         UserPreferencesRepository preferencesRepository = new UserPreferencesRepository(application);
         ContentRepository contentRepository = new ContentRepository(application);
 

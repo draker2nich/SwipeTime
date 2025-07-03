@@ -33,7 +33,7 @@ import com.draker.swipetime.repository.UserPreferencesRepository;
 import com.draker.swipetime.utils.ActionLogger;
 import com.draker.swipetime.utils.CardInfoHelper;
 import com.draker.swipetime.utils.FirestoreDataManager;
-import com.draker.swipetime.utils.GamificationIntegrator;
+// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
 import com.draker.swipetime.utils.AnalyticsTracker;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.InfiniteContentManager;
@@ -112,7 +112,7 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
      * Получить ID текущего пользователя
      */
     private String getCurrentUserId() {
-        String userId = GamificationIntegrator.getCurrentUserId(requireContext());
+        String userId = "user_1"; // Заглушка вместо удаленного GamificationIntegrator.getCurrentUserId(requireContext());
         Log.d(TAG, "Используется ID пользователя: " + userId);
         return userId;
     }
@@ -458,8 +458,9 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
                         gameRepository, bookRepository,
                         animeRepository, contentRepository);
 
-                // Начисляем опыт за свайп вправо
-                boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
+                // Начисляем опыт за свайп вправо (временно отключено)
+                // boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
+                boolean levelUp = false; // Заглушка
                 if (levelUp) {
                     Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
                 }
@@ -476,8 +477,9 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
                 // Отслеживаем свайп в аналитике
                 AnalyticsTracker.trackSwipe(requireContext(), categoryName, false);
 
-                // Начисляем опыт за свайп влево
-                boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), false);
+                // Начисляем опыт за свайп влево (временно отключено)
+                // boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), false);
+                boolean levelUp = false; // Заглушка
                 if (levelUp) {
                     Toast.makeText(getContext(), "Уровень повышен!", Toast.LENGTH_SHORT).show();
                     

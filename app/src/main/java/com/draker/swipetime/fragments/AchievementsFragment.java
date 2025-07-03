@@ -20,8 +20,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.draker.swipetime.R;
 import com.draker.swipetime.adapters.AchievementsAdapter;
 import com.draker.swipetime.utils.GamificationManager;
-import com.draker.swipetime.utils.GamificationIntegrator;
-import com.draker.swipetime.utils.AchievementInitializer;
 import com.draker.swipetime.viewmodels.ProfileViewModel;
 
 import java.util.List;
@@ -113,36 +111,15 @@ public class AchievementsFragment extends Fragment {
     
     private void loadAchievementsDirectly() {
         try {
-            String actualUserId = GamificationIntegrator.getCurrentUserId(requireContext());
-            Log.d("AchievementsFragment", "Загружаем достижения для пользователя: " + actualUserId);
+            // Временно отключаем функциональность, так как удаленные классы недоступны
+            Log.d("AchievementsFragment", "Загрузка достижений временно отключена");
             
-            GamificationManager gamificationManager = GamificationManager.getInstance(requireContext());
-            List<GamificationManager.UserAchievementInfo> achievements = gamificationManager.getUserAchievements(actualUserId);
-            
-            Log.d("AchievementsFragment", "Получено достижений от менеджера: " + achievements.size());
-            
-            for (int i = 0; i < Math.min(5, achievements.size()); i++) {
-                GamificationManager.UserAchievementInfo info = achievements.get(i);
-                Log.d("AchievementsFragment", "Достижение " + (i+1) + ": " + 
-                      info.getAchievement().getTitle() + 
-                      " (выполнено: " + info.isCompleted() + 
-                      ", прогресс: " + info.getProgress() + "%)");
-            }
-            
-            adapter.setAchievements(achievements);
-            
-            int completedCount = gamificationManager.getCompletedAchievementsCount(actualUserId);
-            int totalCount = gamificationManager.getTotalAchievementsCount();
-
-            Log.d("AchievementsFragment", "Статистика достижений - выполнено: " + completedCount + ", всего: " + totalCount);
-
-            achievementsCountText.setText(completedCount + " из " + totalCount);
-
-            int overallProgress = totalCount > 0 ? (completedCount * 100) / totalCount : 0;
-            overallProgressBar.setProgress(overallProgress);
+            // Устанавливаем заглушку
+            achievementsCountText.setText("0 из 0");
+            overallProgressBar.setProgress(0);
 
             if (initializeButton != null) {
-                initializeButton.setVisibility(totalCount == 0 ? View.VISIBLE : View.GONE);
+                initializeButton.setVisibility(View.VISIBLE);
             }
             
         } catch (Exception e) {
@@ -153,30 +130,12 @@ public class AchievementsFragment extends Fragment {
     private void initializeAchievements() {
         if (initializeButton != null) {
             initializeButton.setEnabled(false);
-            initializeButton.setText("Инициализация...");
+            initializeButton.setText("Функция временно отключена");
         }
 
-        AchievementInitializer.forceInitializeAchievements(requireContext(), new AchievementInitializer.InitializationCallback() {
-            @Override
-            public void onInitialized(boolean success, int achievementsCount) {
-                requireActivity().runOnUiThread(() -> {
-                    if (initializeButton != null) {
-                        initializeButton.setEnabled(true);
-                        initializeButton.setText("Инициализировать достижения");
-                    }
-
-                    if (success) {
-                        Toast.makeText(requireContext(),
-                                "Достижения инициализированы: " + achievementsCount,
-                                Toast.LENGTH_LONG).show();
-                        loadAchievementsDirectly();
-                    } else {
-                        Toast.makeText(requireContext(),
-                                "Ошибка инициализации достижений",
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
-            }
-        });
+        // Заглушка вместо удаленного AchievementInitializer
+        Toast.makeText(requireContext(),
+                "Система достижений временно отключена",
+                Toast.LENGTH_LONG).show();
     }
 }
