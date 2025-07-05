@@ -11,7 +11,7 @@ import com.draker.swipetime.database.entities.GameEntity;
 import com.draker.swipetime.database.entities.MovieEntity;
 import com.draker.swipetime.database.entities.TVShowEntity;
 import com.draker.swipetime.models.ContentItem;
-import com.draker.swipetime.utils.ContentShuffler;
+import com.draker.swipetime.utils.ContentManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,6 +25,7 @@ public class ApiContentLoader {
     private static final String TAG = "ApiContentLoader";
     private final ApiManager apiManager;
     private final CardStackAdapter adapter;
+    private final Application application;
     private String currentCategory;
     private int currentPage = 1;
     private boolean isLoading = false;
@@ -41,6 +42,7 @@ public class ApiContentLoader {
     public ApiContentLoader(Application application, CardStackAdapter adapter) {
         this.apiManager = new ApiManager(application);
         this.adapter = adapter;
+        this.application = application;
     }
 
     /**
@@ -62,7 +64,7 @@ public class ApiContentLoader {
         loadedItemIds.clear();
         
         // Сбрасываем перемешивание для категории
-        ContentShuffler.resetHistory(category);
+        ContentManager.getInstance().resetHistory(application, category);
 
         // Очищаем текущий список
         adapter.clear();
@@ -89,7 +91,7 @@ public class ApiContentLoader {
                 }
                 
                 // Перемешиваем элементы для разнообразия
-                List<ContentItem> shuffledItems = ContentShuffler.shuffleContent(items, category);
+                List<ContentItem> shuffledItems = ContentManager.getInstance().shuffleContent(items, category);
                 
                 adapter.addItems(shuffledItems);
                 currentPage++;
@@ -146,7 +148,7 @@ public class ApiContentLoader {
                 }
                 
                 // Перемешиваем элементы для разнообразия
-                List<ContentItem> shuffledItems = ContentShuffler.shuffleContent(items, currentCategory);
+                List<ContentItem> shuffledItems = ContentManager.getInstance().shuffleContent(items, currentCategory);
                 
                 adapter.addItems(shuffledItems);
                 currentPage++;
@@ -418,7 +420,7 @@ public class ApiContentLoader {
     public void markCardAsViewed(String itemId) {
         if (itemId != null && !itemId.isEmpty()) {
             loadedItemIds.add(itemId);
-            ContentShuffler.markContentAsShown(currentCategory, itemId);
+            ContentManager.getInstance().markContentRated(application, currentCategory, itemId, false);
         }
     }
     
@@ -427,7 +429,7 @@ public class ApiContentLoader {
      */
     public void resetViewHistory() {
         loadedItemIds.clear();
-        ContentShuffler.resetHistory(currentCategory);
+        ContentManager.getInstance().resetHistory(application, currentCategory);
         Log.d(TAG, "История просмотра сброшена для категории: " + currentCategory);
     }
 

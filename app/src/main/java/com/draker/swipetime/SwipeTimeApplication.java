@@ -6,16 +6,13 @@ import android.util.Log;
 import com.draker.swipetime.api.ApiDataManager;
 import com.draker.swipetime.api.ApiIntegrationManager;
 import com.draker.swipetime.database.AppDatabase;
-import com.draker.swipetime.database.DataGenerator;
-import com.draker.swipetime.database.DatabaseCleaner;
-import com.draker.swipetime.database.DbCleanerUtil;
+import com.draker.swipetime.utils.DatabaseHelper;
 import com.draker.swipetime.database.entities.ContentEntity;
 import com.draker.swipetime.repository.ContentRepository;
-import com.draker.swipetime.utils.ContentShuffler;
-import com.draker.swipetime.utils.FirebaseAuthManager;
+import com.draker.swipetime.utils.ContentManager;
+import com.draker.swipetime.utils.FirebaseManager;
 import com.draker.swipetime.utils.GamificationManager;
-import com.draker.swipetime.utils.ImageCacheManager;
-import com.draker.swipetime.utils.PersistentFavoritesManager;
+import com.draker.swipetime.utils.ImageManager;
 import com.google.firebase.FirebaseApp;
 
 import java.util.ArrayList;
@@ -38,8 +35,12 @@ public class SwipeTimeApplication extends Application {
         // Инициализация Firebase
         FirebaseApp.initializeApp(this);
         
-        // Инициализация кеша изображений
-        ImageCacheManager.initImageCache(this);
+        // Инициализация менеджеров
+        DatabaseHelper databaseHelper = DatabaseHelper.getInstance(this);
+        ImageManager imageManager = ImageManager.getInstance(this);
+        FirebaseManager firebaseManager = FirebaseManager.getInstance(this);
+        ContentManager contentManager = ContentManager.getInstance();
+        contentManager.initialize(this);
         
         try {
             // Очистка тестовых данных при первом запуске
@@ -54,17 +55,14 @@ public class SwipeTimeApplication extends Application {
             }
             
             // Заполнить базу данных базовыми данными (только пользователя)
-            DataGenerator.populateDatabase(this);
+            databaseHelper.populateDatabase();
             
             // Восстанавливаем состояние избранного
-            PersistentFavoritesManager favManager = new PersistentFavoritesManager(this);
-            favManager.restoreFavoritesState();
-            favManager.removeTestFavorites(); // Удаляем тестовые данные из избранного
+            databaseHelper.restoreFavoritesState();
             
             // Проверка авторизации Firebase
-            FirebaseAuthManager authManager = FirebaseAuthManager.getInstance(this);
-            if (authManager.isUserSignedIn()) {
-                Log.d(TAG, "Пользователь Firebase авторизован: " + authManager.getCurrentUser().getEmail());
+            if (firebaseManager.isUserSignedIn()) {
+                Log.d(TAG, "Пользователь Firebase авторизован: " + firebaseManager.getCurrentUser().getEmail());
             } else {
                 Log.d(TAG, "Пользователь Firebase не авторизован");
             }
@@ -83,12 +81,12 @@ public class SwipeTimeApplication extends Application {
                 AppDatabase.destroyInstance();
                 
                 // Удаляем файл базы данных
-                boolean deleted = DatabaseCleaner.deleteDatabase(this, DATABASE_NAME);
+                boolean deleted = databaseHelper.deleteDatabaseCompletely();
                 Log.d(TAG, "База данных удалена: " + deleted);
                 
                 // Пересоздаем базу данных
                 if (deleted) {
-                    DataGenerator.populateDatabase(this);
+                    databaseHelper.populateDatabase();
                     Log.d(TAG, "База данных успешно пересоздана");
                     
                     // Также инициализируем интеграцию внешних API
@@ -140,15 +138,16 @@ public class SwipeTimeApplication extends Application {
             }
             
             // Очищаем сохраненные ID в SharedPreferences
-            PersistentFavoritesManager favManager = new PersistentFavoritesManager(this);
-            int removed = favManager.removeTestFavorites();
-            Log.d(TAG, "Удалено " + removed + " тестовых элементов из SharedPreferences");
+            DatabaseHelper databaseHelper = DatabaseHelper.getInstance(this);
+            databaseHelper.clearAllHistory();
+            Log.d(TAG, "Удалены тестовые элементы из SharedPreferences");
         } catch (Exception e) {
             Log.e(TAG, "Ошибка при удалении тестовых данных: " + e.getMessage());
         }
         
         // После удаления тестовых данных также используем общую очистку
-        DbCleanerUtil.clearTestData(this);
+        DatabaseHelper databaseHelper = DatabaseHelper.getInstance(this);
+        databaseHelper.clearTestData();
         
         // Ждем немного, чтобы операция очистки успела выполниться
         try {
@@ -169,7 +168,9 @@ public class SwipeTimeApplication extends Application {
         ApiDataManager.getInstance().resetAllPageTokens();
         
         // Сбрасываем историю показа контента
-        ContentShuffler.resetAllHistory();
+        ContentManager contentManager = ContentManager.getInstance();
+        contentManager.resetAllCaches();
+        contentManager.resetAllHistory(this);
         
         Log.d(TAG, "Все кеши успешно сброшены");
     }

@@ -14,8 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.chip.Chip;
 import com.draker.swipetime.R;
 import com.draker.swipetime.models.ContentItem;
-import com.draker.swipetime.utils.GlideUtils;
-import com.draker.swipetime.utils.LikedItemsHelper;
+import com.draker.swipetime.utils.ImageManager;
+import com.draker.swipetime.utils.ContentManager;
 
 import java.util.List;
 
@@ -83,9 +83,9 @@ public class ImprovedLikedContentAdapter extends RecyclerView.Adapter<ImprovedLi
             titleTextView.setText(item.getTitle());
             descriptionTextView.setText(item.getDescription());
             
-            // Загружаем изображение с помощью GlideUtils
+            // Загружаем изображение с помощью ImageManager
             String imageUrl = item.getImageUrl();
-            GlideUtils.loadLikedContentImage(context, imageUrl, coverImageView, item.getCategory());
+            ImageManager.loadLikedContentImage(context, imageUrl, coverImageView, item.getCategory());
             
             // Устанавливаем категорию в чип с цветовой индикацией
             String categoryText = item.getCategory() != null ? item.getCategory() : "Другое";
@@ -100,7 +100,7 @@ public class ImprovedLikedContentAdapter extends RecyclerView.Adapter<ImprovedLi
                 watchedIconView.setVisibility(View.VISIBLE);
                 
                 // Выбираем иконку в зависимости от категории
-                int iconResId = LikedItemsHelper.getWatchedIcon(item.getCategory());
+                int iconResId = ContentManager.getInstance().getWatchedIcon(item.getCategory());
                 watchedIconView.setImageResource(iconResId);
             } else {
                 watchedIconView.setVisibility(View.GONE);

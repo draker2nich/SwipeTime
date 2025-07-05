@@ -32,12 +32,10 @@ import com.draker.swipetime.repository.TVShowRepository;
 import com.draker.swipetime.repository.UserPreferencesRepository;
 import com.draker.swipetime.utils.ActionLogger;
 import com.draker.swipetime.utils.CardInfoHelper;
-import com.draker.swipetime.utils.FirestoreDataManager;
-// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
+import com.draker.swipetime.utils.FirebaseManager;
 import com.draker.swipetime.utils.AnalyticsTracker;
 import com.draker.swipetime.utils.GamificationManager;
-import com.draker.swipetime.utils.InfiniteContentManager;
-import com.draker.swipetime.utils.LikedItemsHelper;
+import com.draker.swipetime.utils.ContentManager;
 import com.draker.swipetime.viewmodels.FilterViewModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -87,7 +85,7 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
     private FilterViewModel filterViewModel;
 
     // Менеджер бесконечного контента
-    private InfiniteContentManager infiniteContentManager;
+    private ContentManager contentManager;
 
     private static final String ARG_CATEGORY = "category";
 
@@ -140,7 +138,8 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
         filterViewModel = new ViewModelProvider(this).get(FilterViewModel.class);
         
         // Инициализация менеджера бесконечного контента
-        infiniteContentManager = InfiniteContentManager.getInstance();
+        contentManager = ContentManager.getInstance();
+        contentManager.initialize(requireContext());
     }
 
     @Nullable
@@ -191,7 +190,7 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
         showLoading(true);
         
         String userId = getCurrentUserId();
-        infiniteContentManager.getNextBatch(categoryName, userId, PRELOAD_BATCH_SIZE, 
+        contentManager.getNextBatch(categoryName, userId, PRELOAD_BATCH_SIZE, 
                 requireContext(), items -> {
             if (getActivity() == null) return;
             
@@ -312,7 +311,7 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
      */
     private void reloadCardsWithFilters() {
         // Сбрасываем кэш в менеджере бесконечного контента
-        infiniteContentManager.resetCache(categoryName);
+        contentManager.resetCache(categoryName);
         
         // Загружаем новую партию карточек
         loadInitialBatch();
@@ -345,7 +344,7 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
 
     private void reloadCards() {
         // Сбрасываем кэш в менеджере бесконечного контента
-        infiniteContentManager.resetCache(categoryName);
+        contentManager.resetCache(categoryName);
         
         // Загружаем новую партию карточек
         loadInitialBatch();
@@ -360,7 +359,7 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
         showLoading(true);
         
         String userId = getCurrentUserId();
-        infiniteContentManager.getNextBatch(categoryName, userId, PRELOAD_BATCH_SIZE, 
+        contentManager.getNextBatch(categoryName, userId, PRELOAD_BATCH_SIZE, 
                 requireContext(), items -> {
             if (getActivity() == null) return;
             
@@ -452,8 +451,8 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
                 // Отслеживаем свайп в аналитике
                 AnalyticsTracker.trackSwipe(requireContext(), categoryName, true);
 
-                // Используем вспомогательный класс для добавления элемента в избранное
-                LikedItemsHelper.addToLiked(item, categoryName,
+                // Используем ContentManager для добавления элемента в избранное
+                contentManager.addToLiked(item, categoryName,
                         movieRepository, tvShowRepository,
                         gameRepository, bookRepository,
                         animeRepository, contentRepository);
@@ -527,9 +526,9 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
         contentEntity.setCompleted(item.isWatched()); // Используем существующий метод isWatched
         contentEntity.setTimestamp(System.currentTimeMillis());
         
-        // Используем FirestoreDataManager для синхронизации
-        FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(requireContext());
-        firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
+        // Используем FirebaseManager для синхронизации
+        FirebaseManager firestoreManager = FirebaseManager.getInstance();
+        firestoreManager.syncUserData(requireContext(), userId, contentEntity, new FirebaseManager.SyncCallback() {
             @Override
             public void onSuccess() {
                 Log.d(TAG, "Синхронизация с Firebase успешно выполнена");
@@ -552,8 +551,8 @@ public class InfiniteCardStackFragment extends Fragment implements CardStackList
             return;
         }
         
-        FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(requireContext());
-        firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
+        FirebaseManager firestoreManager = FirebaseManager.getInstance();
+        firestoreManager.syncUserProfile(requireContext(), userId, new FirebaseManager.SyncCallback() {
             @Override
             public void onSuccess() {
                 Log.d(TAG, "Синхронизация профиля с Firebase успешно выполнена");

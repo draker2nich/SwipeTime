@@ -11,7 +11,7 @@ import com.draker.swipetime.database.entities.ContentEntity;
 import com.draker.swipetime.database.entities.ReviewEntity;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
-import com.draker.swipetime.utils.FirebaseAuthManager;
+import com.draker.swipetime.utils.FirebaseManager;
 import com.draker.swipetime.utils.NetworkHelper;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
@@ -40,7 +40,7 @@ public class FirebaseRepository {
     private static final String REVIEWS_COLLECTION = "reviews";
 
     private final FirebaseFirestore firestore;
-    private final FirebaseAuthManager authManager;
+    private final FirebaseManager firebaseManager;
     private final UserRepository userRepository;
     private final ContentRepository contentRepository;
     private final ReviewRepository reviewRepository;
@@ -49,7 +49,7 @@ public class FirebaseRepository {
 
     public FirebaseRepository(Application application) {
         this.firestore = FirebaseFirestore.getInstance();
-        this.authManager = FirebaseAuthManager.getInstance(application);
+        this.firebaseManager = FirebaseManager.getInstance(application);
         this.userRepository = new UserRepository(application);
         this.contentRepository = new ContentRepository(application);
         this.reviewRepository = new ReviewRepository(application);
@@ -64,7 +64,7 @@ public class FirebaseRepository {
         MutableLiveData<Boolean> result = new MutableLiveData<>();
         
         // Получаем текущего пользователя
-        FirebaseUser user = authManager.getCurrentUser();
+        FirebaseUser user = firebaseManager.getCurrentUser();
         if (user == null) {
             result.setValue(false);
             return result;

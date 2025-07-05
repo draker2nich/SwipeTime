@@ -15,14 +15,14 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.draker.swipetime.R;
-import com.draker.swipetime.utils.ThemeManager;
+import com.draker.swipetime.utils.UIHelper;
 
 /**
  * Фрагмент настроек приложения с поддержкой тем и доступности
  */
 public class SettingsFragment extends Fragment {
     
-    private ThemeManager themeManager;
+    private UIHelper uiHelper;
     private Vibrator vibrator;
     
     // UI элементы
@@ -36,7 +36,7 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        themeManager = new ThemeManager(requireContext());
+        uiHelper = UIHelper.getInstance(requireContext());
         vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
     }
     
@@ -72,19 +72,19 @@ public class SettingsFragment extends Fragment {
     
     private void setupAccessibilitySettings() {
         // Настройка вибрации
-        hapticFeedbackSwitch.setChecked(themeManager.isHapticFeedbackEnabled());
+        hapticFeedbackSwitch.setChecked(uiHelper.isHapticFeedbackEnabled());
         hapticFeedbackSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            themeManager.setHapticFeedbackEnabled(isChecked);
+            uiHelper.setHapticFeedbackEnabled(isChecked);
             if (isChecked && vibrator != null) {
                 performHapticFeedback();
             }
         });
         
         // Настройка крупного текста
-        largeTextSwitch.setChecked(themeManager.isLargeTextEnabled());
+        largeTextSwitch.setChecked(uiHelper.isLargeTextEnabled());
         largeTextSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            themeManager.setLargeTextEnabled(isChecked);
-            if (themeManager.isHapticFeedbackEnabled()) {
+            uiHelper.setLargeTextEnabled(isChecked);
+            if (uiHelper.isHapticFeedbackEnabled()) {
                 performHapticFeedback();
             }
             // Можно добавить перезагрузку активности для применения изменений
@@ -92,20 +92,20 @@ public class SettingsFragment extends Fragment {
         });
         
         // Настройка высокого контраста
-        highContrastSwitch.setChecked(themeManager.isHighContrastEnabled());
+        highContrastSwitch.setChecked(uiHelper.isHighContrastEnabled());
         highContrastSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            themeManager.setHighContrastEnabled(isChecked);
-            if (themeManager.isHapticFeedbackEnabled()) {
+            uiHelper.setHighContrastEnabled(isChecked);
+            if (uiHelper.isHapticFeedbackEnabled()) {
                 performHapticFeedback();
             }
             showRestartRecommendation();
         });
         
         // Настройка упрощенных анимаций
-        reduceMotionSwitch.setChecked(themeManager.isReduceMotionEnabled());
+        reduceMotionSwitch.setChecked(uiHelper.isReduceMotionEnabled());
         reduceMotionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            themeManager.setReduceMotionEnabled(isChecked);
-            if (themeManager.isHapticFeedbackEnabled()) {
+            uiHelper.setReduceMotionEnabled(isChecked);
+            if (uiHelper.isHapticFeedbackEnabled()) {
                 performHapticFeedback();
             }
         });
@@ -113,18 +113,18 @@ public class SettingsFragment extends Fragment {
     
     private void showThemeSelectionDialog() {
         String[] themeOptions = {
-            getString(R.string.theme_light),
-            getString(R.string.theme_dark),
-            getString(R.string.theme_auto)
+            "Светлая тема",
+            "Темная тема", 
+            "Автоматически"
         };
         
-        int currentTheme = themeManager.getThemeMode();
+        int currentTheme = uiHelper.getThemeMode();
         
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle(getString(R.string.theme_settings))
+        builder.setTitle("Настройки темы")
                .setSingleChoiceItems(themeOptions, currentTheme, (dialog, which) -> {
-                   themeManager.setThemeMode(which);
-                   if (themeManager.isHapticFeedbackEnabled()) {
+                   uiHelper.setThemeMode(which);
+                   if (uiHelper.isHapticFeedbackEnabled()) {
                        performHapticFeedback();
                    }
                    updateUI();
@@ -137,15 +137,15 @@ public class SettingsFragment extends Fragment {
     
     private void updateUI() {
         // Обновляем текст текущей темы
-        String currentTheme = themeManager.getThemeName(requireContext());
-        currentThemeText.setText(getString(R.string.current_theme, currentTheme));
+        String currentTheme = uiHelper.getThemeName();
+        currentThemeText.setText(currentTheme);
         
         // Применяем настройки доступности к элементам UI
         applyAccessibilitySettings();
     }
     
     private void applyAccessibilitySettings() {
-        float textSizeMultiplier = themeManager.getTextSizeMultiplier();
+        float textSizeMultiplier = uiHelper.getTextSizeMultiplier();
         
         if (textSizeMultiplier != 1.0f) {
             // Применяем увеличенный размер текста
@@ -153,10 +153,10 @@ public class SettingsFragment extends Fragment {
         }
         
         // Применяем настройки высокого контраста если необходимо
-        if (themeManager.isHighContrastEnabled()) {
+        if (uiHelper.isHighContrastEnabled()) {
             // Можно изменить стили для высокого контраста
             currentThemeText.setTextColor(
-                requireContext().getColor(R.color.high_contrast_text)
+                requireContext().getColor(android.R.color.primary_text_light)
             );
         }
     }

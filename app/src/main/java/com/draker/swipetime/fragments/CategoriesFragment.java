@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.draker.swipetime.R;
 import com.draker.swipetime.adapters.CategoryAdapter;
 import com.draker.swipetime.models.Category;
-import com.draker.swipetime.utils.FragmentMigrationHelper;
+import com.draker.swipetime.utils.FirebaseManager;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,7 +60,7 @@ public class CategoriesFragment extends Fragment implements CategoryAdapter.OnCa
     @Override
     public void onCategoryClick(Category category) {
         // Проверяем, какой режим фрагментов используется
-        boolean useInfiniteFragments = FragmentMigrationHelper.shouldUseInfiniteFragments(requireContext());
+        boolean useInfiniteFragments = FirebaseManager.getInstance().shouldUseInfiniteFragments();
         
         // Создаем соответствующий фрагмент
         Fragment cardStackFragment;

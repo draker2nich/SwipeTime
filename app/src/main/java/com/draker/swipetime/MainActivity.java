@@ -8,11 +8,10 @@ import androidx.fragment.app.FragmentTransaction;
 import com.draker.swipetime.fragments.AuthProfileFragment;
 import com.draker.swipetime.fragments.CategoriesFragment;
 import com.draker.swipetime.fragments.LikedContentFragment;
-import com.draker.swipetime.utils.FragmentMigrationHelper;
-import com.draker.swipetime.utils.HapticFeedbackManager;
-import com.draker.swipetime.utils.InfiniteContentManager;
+import com.draker.swipetime.utils.FirebaseManager;
+import com.draker.swipetime.utils.UIHelper;
+import com.draker.swipetime.utils.ContentManager;
 import com.draker.swipetime.utils.NetworkHelper;
-import com.draker.swipetime.utils.ThemeManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigationrail.NavigationRailView;
 
@@ -21,29 +20,29 @@ public class MainActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigationView;
     private NavigationRailView navigationRailView;
     private NetworkHelper networkHelper;
-    private ThemeManager themeManager;
-    private HapticFeedbackManager hapticManager;
+    private UIHelper uiHelper;
+    private FirebaseManager firebaseManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Инициализируем менеджер тем перед setContentView
-        themeManager = new ThemeManager(this);
-        themeManager.applyTheme();
+        // Инициализируем UI helper перед setContentView
+        uiHelper = UIHelper.getInstance(this);
+        uiHelper.applyTheme();
         
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        // Инициализируем помощники UI/UX
-        hapticManager = HapticFeedbackManager.getInstance(this);
+        // Инициализируем Firebase manager
+        firebaseManager = FirebaseManager.getInstance(this);
 
         // Инициализация мониторинга сети
         networkHelper = NetworkHelper.getInstance(this);
         
         // Устанавливаем использование бесконечных фрагментов по умолчанию
-        FragmentMigrationHelper.setUseInfiniteFragments(this, true);
+        firebaseManager.setUseInfiniteFragments(true);
         
-        // Предварительно инициализируем менеджер бесконечного контента
-        InfiniteContentManager.getInstance();
+        // Предварительно инициализируем менеджер контента
+        ContentManager.getInstance().initialize(this);
 
         // Инициализация навигации (адаптивная для планшетов и телефонов)
         setupAdaptiveNavigation();
@@ -156,8 +155,8 @@ public class MainActivity extends AppCompatActivity {
      * Выполнить хаптическую обратную связь
      */
     private void performHapticFeedback() {
-        if (hapticManager != null) {
-            hapticManager.performLightHaptic(null);
+        if (uiHelper != null) {
+            uiHelper.performLightHaptic(null);
         }
     }
     
@@ -179,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             
             // Добавляем анимации переходов если они не отключены
-            if (!themeManager.isReduceMotionEnabled()) {
+            if (!uiHelper.isReduceMotionEnabled()) {
                 transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             }
             
@@ -241,17 +240,17 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * Получить менеджер тем для использования в фрагментах
+     * Получить UI helper для использования в фрагментах
      */
-    public ThemeManager getThemeManager() {
-        return themeManager;
+    public UIHelper getUIHelper() {
+        return uiHelper;
     }
     
     /**
-     * Получить менеджер хаптической обратной связи
+     * Получить Firebase manager
      */
-    public HapticFeedbackManager getHapticManager() {
-        return hapticManager;
+    public FirebaseManager getFirebaseManager() {
+        return firebaseManager;
     }
     
     @Override
@@ -262,8 +261,8 @@ public class MainActivity extends AppCompatActivity {
         setupAdaptiveNavigation();
         
         // Применяем тему заново если нужно
-        if (themeManager != null) {
-            themeManager.applyTheme();
+        if (uiHelper != null) {
+            uiHelper.applyTheme();
         }
     }
     

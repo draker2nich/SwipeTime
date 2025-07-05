@@ -36,13 +36,10 @@ import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
 import com.draker.swipetime.repository.UserPreferencesRepository;
 import com.draker.swipetime.utils.ActionLogger;
-import com.draker.swipetime.utils.CardFilterIntegrator;
 import com.draker.swipetime.utils.CardInfoHelper;
-import com.draker.swipetime.utils.ContentFilterHelper;
-import com.draker.swipetime.utils.FirestoreDataManager;
+import com.draker.swipetime.utils.ContentManager;
+import com.draker.swipetime.utils.FirebaseManager;
 import com.draker.swipetime.utils.GamificationManager;
-import com.draker.swipetime.utils.LikedItemsHelper;
-import com.draker.swipetime.utils.PersistentFavoritesManager;
 import com.draker.swipetime.viewmodels.FilterViewModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -87,6 +84,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
     private ContentRepository contentRepository;
     private UserPreferencesRepository preferencesRepository;
     private GamificationManager gamificationManager;
+    private ContentManager contentManager;
 
     // ViewModel для фильтров
     private FilterViewModel filterViewModel;
@@ -140,6 +138,10 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         // Инициализация менеджера геймификации
         gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
 
+        // Инициализация менеджера контента
+        contentManager = ContentManager.getInstance();
+        contentManager.initialize(requireContext());
+
         // Инициализация ViewModel
         filterViewModel = new ViewModelProvider(this).get(FilterViewModel.class);
         
@@ -187,9 +189,9 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         // Настройка CardStackLayoutManager
         setupCardStackView();
 
-        // Инициализация адаптера с данными, используя CardFilterIntegrator
+        // Инициализация адаптера с данными, используя ContentManager
         String userId = getCurrentUserId();
-        List<ContentItem> items = CardFilterIntegrator.getFilteredContentItems(
+        List<ContentItem> items = contentManager.getFilteredContentItems(
                 categoryName,
                 userId,
                 movieRepository,
@@ -281,9 +283,9 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
      * Перезагружает карточки с применением фильтров
      */
     private void reloadCardsWithFilters() {
-        // Используем новый CardFilterIntegrator для получения отфильтрованного списка
+        // Используем ContentManager для получения отфильтрованного списка
         String userId = getCurrentUserId();
-        List<ContentItem> filteredItems = CardFilterIntegrator.getFilteredContentItems(
+        List<ContentItem> filteredItems = contentManager.getFilteredContentItems(
                 categoryName,
                 userId,
                 movieRepository,
@@ -351,7 +353,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             reloadCardsWithFilters();
         } else {
             // Иначе загружаем все элементы
-            List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
+            List<ContentItem> allItems = contentManager.getFilteredContentItems(
                     categoryName,
                     userId,
                     movieRepository,
@@ -427,8 +429,8 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
      * Обновляет список карточек после загрузки данных из API
      */
     private void refreshCardsAfterApiLoad() {
-        // Сбрасываем сессионную историю перемешивания
-        com.draker.swipetime.utils.ContentShuffler.resetSessionHistory(categoryName);
+        // Сбрасываем кэш в ContentManager
+        contentManager.resetCache(categoryName);
         
         if (getActivity() == null) return;
         
@@ -438,7 +440,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             
             // Получаем свежие данные с применением фильтров
             String userId = getCurrentUserId();
-            List<ContentItem> freshItems = CardFilterIntegrator.getFilteredContentItems(
+            List<ContentItem> freshItems = contentManager.getFilteredContentItems(
                     categoryName,
                     userId,
                     movieRepository,
@@ -474,11 +476,11 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             if (newItems.size() < 10) {
                 Log.d(TAG, "Недостаточно новых элементов, применяем стратегию повторного использования");
                 
-                // Сбрасываем историю показанных элементов
-                com.draker.swipetime.utils.ContentShuffler.resetAllHistory();
+                // Сбрасываем историю показанных элементов в ContentManager
+                contentManager.resetHistory(requireContext(), categoryName);
                 
                 // Получаем все элементы заново
-                List<ContentItem> allItems = CardFilterIntegrator.getFilteredContentItems(
+                List<ContentItem> allItems = contentManager.getFilteredContentItems(
                         categoryName,
                         userId,
                         movieRepository,
@@ -515,7 +517,7 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                 Toast.makeText(getContext(), "Загружены новые рекомендации", Toast.LENGTH_SHORT).show();
             } else {
                 // Если достаточно новых элементов, просто перемешиваем и добавляем их
-                List<ContentItem> shuffledNewItems = com.draker.swipetime.utils.ContentShuffler.shuffleContent(newItems, categoryName);
+                List<ContentItem> shuffledNewItems = contentManager.shuffleContent(newItems, categoryName);
                 
                 // Добавляем новые элементы в адаптер
                 adapter.addItems(shuffledNewItems);
@@ -704,8 +706,8 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
 
             String userId = getCurrentUserId();
             
-            // Отмечаем элемент как показанный в ContentShuffler
-            com.draker.swipetime.utils.ContentShuffler.markContentAsPermanentlyShown(categoryName, item.getId());
+            // Отмечаем элемент как просмотренный в ContentManager
+            contentManager.markContentRated(requireContext(), categoryName, item.getId(), direction == Direction.Right);
             
             if (direction == Direction.Right) {
                 // Пользователю понравился элемент
@@ -715,16 +717,15 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
                 // Логируем действие
                 ActionLogger.logSwipe(true, item.getId(), item.getTitle());
 
-                // Используем вспомогательный класс для добавления элемента в избранное
-                LikedItemsHelper.addToLiked(item, categoryName,
+                // Используем ContentManager для добавления элемента в избранное
+                contentManager.addToLiked(item, categoryName,
                         movieRepository, tvShowRepository,
                         gameRepository, bookRepository,
                         animeRepository, contentRepository);
                         
                 // Сохраняем в постоянную память избранное
-                com.draker.swipetime.utils.PersistentFavoritesManager favManager = 
-                    new com.draker.swipetime.utils.PersistentFavoritesManager(requireContext());
-                favManager.addToFavorites(item.getId());
+                FirebaseManager firebaseManager = FirebaseManager.getInstance();
+                firebaseManager.saveFavoriteItem(requireContext(), item.getId());
 
                 // Начисляем опыт за свайп вправо (временно отключено)
                 // boolean levelUp = GamificationIntegrator.registerSwipe(getContext(), true);
@@ -835,9 +836,9 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
         contentEntity.setCompleted(item.isWatched()); // Используем существующий метод isWatched
         contentEntity.setTimestamp(System.currentTimeMillis());
         
-        // Используем FirestoreDataManager для синхронизации
-        FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(requireContext());
-        firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
+        // Используем FirebaseManager для синхронизации
+        FirebaseManager firestoreManager = FirebaseManager.getInstance();
+        firestoreManager.syncUserData(requireContext(), userId, contentEntity, new FirebaseManager.SyncCallback() {
             @Override
             public void onSuccess() {
                 Log.d(TAG, "Синхронизация с Firebase успешно выполнена");
@@ -862,8 +863,8 @@ public class CardStackFragment extends Fragment implements CardStackListener, Fi
             return;
         }
         
-        FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(requireContext());
-        firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
+        FirebaseManager firestoreManager = FirebaseManager.getInstance();
+        firestoreManager.syncUserProfile(requireContext(), userId, new FirebaseManager.SyncCallback() {
             @Override
             public void onSuccess() {
                 Log.d(TAG, "Синхронизация профиля с Firebase успешно выполнена");

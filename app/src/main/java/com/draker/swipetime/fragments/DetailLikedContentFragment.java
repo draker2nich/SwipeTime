@@ -31,9 +31,9 @@ import com.draker.swipetime.repository.TVShowRepository;
 import com.draker.swipetime.repository.UserRepository;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.draker.swipetime.utils.ActionLogger;
-// import com.draker.swipetime.utils.GamificationIntegrator; // Класс удален в рамках рефакторинга
 import com.draker.swipetime.utils.GamificationManager;
-import com.draker.swipetime.utils.LikedItemsHelper;
+import com.draker.swipetime.utils.ContentManager;
+import com.draker.swipetime.utils.ImageManager;
 import com.google.android.material.textfield.TextInputEditText;
 
 /**
@@ -74,6 +74,9 @@ public class DetailLikedContentFragment extends Fragment {
     
     // Менеджер геймификации
     private GamificationManager gamificationManager;
+    
+    // Менеджер контента
+    private ContentManager contentManager;
 
     // ID текущего пользователя
     private String currentUserId;
@@ -112,6 +115,10 @@ public class DetailLikedContentFragment extends Fragment {
         
         // Инициализация менеджера геймификации
         gamificationManager = GamificationManager.getInstance(requireActivity().getApplication());
+        
+        // Инициализация менеджера контента
+        contentManager = ContentManager.getInstance();
+        contentManager.initialize(requireContext());
 
         // Проверяем, существует ли текущий пользователь, если нет - создаем демо пользователя
         UserEntity currentUser = userRepository.getUserById(currentUserId);
@@ -213,10 +220,10 @@ public class DetailLikedContentFragment extends Fragment {
         categoryTextView.setText(contentItem.getCategory());
         descriptionTextView.setText(contentItem.getDescription());
         
-        // Используем GlideUtils для загрузки изображения
+        // Используем ImageManager для загрузки изображения
         try {
             if (contentItem.getImageUrl() != null && !contentItem.getImageUrl().isEmpty()) {
-                com.draker.swipetime.utils.GlideUtils.loadDetailContentImage(
+                ImageManager.loadDetailContentImage(
                     requireContext(), 
                     contentItem.getImageUrl(), 
                     coverImageView,
@@ -238,7 +245,7 @@ public class DetailLikedContentFragment extends Fragment {
         toolbar.setTitle(contentItem.getTitle());
         
         // Обновляем текст переключателя в зависимости от типа контента
-        String switchLabel = LikedItemsHelper.getWatchedSwitchLabel(contentItem.getCategory(), requireContext());
+        String switchLabel = contentManager.getWatchedSwitchLabel(contentItem.getCategory(), requireContext());
         watchedLabel.setText(switchLabel);
         
         // Устанавливаем начальное состояние переключателя

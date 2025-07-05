@@ -18,7 +18,7 @@ import com.draker.swipetime.repository.ContentRepository;
 import com.draker.swipetime.repository.GameRepository;
 import com.draker.swipetime.repository.MovieRepository;
 import com.draker.swipetime.repository.TVShowRepository;
-import com.draker.swipetime.utils.ContentShuffler;
+import com.draker.swipetime.utils.ContentManager;
 
 import java.util.List;
 
@@ -88,7 +88,7 @@ public class ApiIntegrationManager {
         
         // Сбрасываем все кеши API и перемешивания
         apiManager.resetAllCaches();
-        ContentShuffler.resetAllHistory();
+        ContentManager.getInstance().resetAllHistory(application);
         
         // Проверяем, есть ли уже данные в базе данных
         boolean hasMovies = movieRepository.getCount() >= 5;
@@ -437,7 +437,7 @@ public class ApiIntegrationManager {
      * @param skipIfLoaded пропустить загрузку, если данные уже загружены
      * @param callback обратный вызов по завершении загрузки
      */
-    private void loadApiDataForCategory(String categoryName, boolean skipIfLoaded, CardStackFragmentHelper.ApiLoadCallback callback) {
+    private void loadApiDataForCategory(String categoryName, boolean skipIfLoaded, ApiInitCallback callback) {
         if (skipIfLoaded) {
             Log.d(TAG, "Пропуск загрузки данных для категории " + categoryName + ", т.к. данные уже загружены");
             callback.onComplete(true);
@@ -446,16 +446,32 @@ public class ApiIntegrationManager {
         
         Log.d(TAG, "Начало загрузки данных для категории " + categoryName);
         
-        CardStackFragmentHelper.loadApiDataForCategory(
-                categoryName,
-                apiManager,
-                movieRepository,
-                tvShowRepository,
-                gameRepository,
-                bookRepository,
-                animeRepository,
-                callback
-        );
+        // Простая загрузка для указанной категории
+        switch (categoryName.toLowerCase()) {
+            case "фильмы":
+            case "movie":
+                loadMoviesData(20, callback);
+                break;
+            case "сериалы":
+            case "tv_show":
+                loadTVShowsData(20, callback);
+                break;
+            case "игры":
+            case "game":
+                loadGamesData(20, callback);
+                break;
+            case "книги":
+            case "book":
+                loadBooksData(20, callback);
+                break;
+            case "аниме":
+            case "anime":
+                loadAnimeData(20, callback);
+                break;
+            default:
+                callback.onError("Неизвестная категория: " + categoryName);
+                break;
+        }
     }
     
     /**

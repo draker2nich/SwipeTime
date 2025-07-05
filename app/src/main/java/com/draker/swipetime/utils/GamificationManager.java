@@ -12,7 +12,7 @@ import com.draker.swipetime.database.entities.UserAchievementCrossRef;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 import com.draker.swipetime.utils.ActionLogger;
-import com.draker.swipetime.utils.FirestoreDataManager;
+import com.draker.swipetime.utils.FirebaseManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -309,11 +309,11 @@ public class GamificationManager {
         }
         
         try {
-            // Получаем экземпляр FirestoreDataManager
-            FirestoreDataManager firestoreManager = FirestoreDataManager.getInstance(context);
+            // Получаем экземпляр FirebaseManager
+            FirebaseManager firestoreManager = FirebaseManager.getInstance();
             
             // Запускаем синхронизацию
-            firestoreManager.syncUserData(userId, new FirestoreDataManager.SyncCallback() {
+            firestoreManager.syncUserProfile(context, userId, new FirebaseManager.SyncCallback() {
                 @Override
                 public void onSuccess() {
                     Log.d(TAG, "Синхронизация с Firebase успешно выполнена");

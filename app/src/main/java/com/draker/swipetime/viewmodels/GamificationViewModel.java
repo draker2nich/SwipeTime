@@ -13,7 +13,7 @@ import com.draker.swipetime.database.entities.AchievementEntity;
 import com.draker.swipetime.database.entities.UserEntity;
 import com.draker.swipetime.database.entities.UserStatsEntity;
 import com.draker.swipetime.utils.ActionLogger;
-import com.draker.swipetime.utils.FirebaseAuthManager;
+import com.draker.swipetime.utils.FirebaseManager;
 import com.draker.swipetime.utils.GamificationManager;
 import com.draker.swipetime.utils.XpLevelCalculator;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,7 +31,7 @@ public class GamificationViewModel extends AndroidViewModel {
 
     private final AppDatabase database;
     private final GamificationManager gamificationManager;
-    private final FirebaseAuthManager firebaseAuthManager;
+    private final FirebaseManager firebaseManager;
     
     private String currentUserId = DEFAULT_USER_ID;
     
@@ -47,11 +47,11 @@ public class GamificationViewModel extends AndroidViewModel {
         super(application);
         database = AppDatabase.getInstance(application);
         gamificationManager = GamificationManager.getInstance(application);
-        firebaseAuthManager = FirebaseAuthManager.getInstance(application);
+        firebaseManager = FirebaseManager.getInstance(application);
         
         // Проверяем, вошел ли пользователь
-        if (firebaseAuthManager.isUserSignedIn()) {
-            FirebaseUser user = firebaseAuthManager.getCurrentUser();
+        if (firebaseManager.isUserSignedIn()) {
+            FirebaseUser user = firebaseManager.getCurrentUser();
             if (user != null) {
                 currentUserId = user.getUid();
                 Log.d(TAG, "Использую ID авторизованного пользователя: " + currentUserId);

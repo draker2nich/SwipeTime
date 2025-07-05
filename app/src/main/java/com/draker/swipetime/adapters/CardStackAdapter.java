@@ -16,8 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.draker.swipetime.R;
 import com.draker.swipetime.models.ContentItem;
-import com.draker.swipetime.utils.ImageUtil;
-import com.draker.swipetime.utils.ThemeManager;
+import com.draker.swipetime.utils.UIHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
 
     private Context context;
     private List<ContentItem> items;
-    private ThemeManager themeManager;
+    private UIHelper uiHelper;
     private OnCardInteractionListener listener;
 
     public interface OnCardInteractionListener {
@@ -40,7 +39,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     public CardStackAdapter(Context context, List<ContentItem> items) {
         this.context = context;
         this.items = items != null ? items : new ArrayList<>();
-        this.themeManager = new ThemeManager(context);
+        this.uiHelper = UIHelper.getInstance(context);
     }
 
     public void setOnCardInteractionListener(OnCardInteractionListener listener) {
@@ -228,12 +227,12 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     }
 
     private void loadContentImage(CardViewHolder holder, ContentItem item) {
-        String imageUrl = ImageUtil.getFallbackImageUrl(item.getImageUrl(), item.getCategory());
-        ImageUtil.loadCardImage(context, imageUrl, holder.image, item.getCategory());
+        String imageUrl = uiHelper.getFallbackImageUrl(item.getImageUrl(), item.getCategory());
+        uiHelper.loadCardImage(imageUrl, holder.image, item.getCategory());
     }
 
     private void applyAccessibilitySettings(CardViewHolder holder) {
-        float textSizeMultiplier = themeManager.getTextSizeMultiplier();
+        float textSizeMultiplier = uiHelper.getTextSizeMultiplier();
         
         if (textSizeMultiplier != 1.0f) {
             // Применяем увеличенный размер текста
@@ -245,7 +244,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
         }
         
         // Применяем высокий контраст если включен
-        if (themeManager.isHighContrastEnabled()) {
+        if (uiHelper.isHighContrastEnabled()) {
             int highContrastTextColor = context.getColor(R.color.high_contrast_text);
             holder.title.setTextColor(highContrastTextColor);
             holder.subtitle.setTextColor(highContrastTextColor);
@@ -281,7 +280,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     }
 
     private void animateCardEntry(CardViewHolder holder) {
-        if (themeManager.isReduceMotionEnabled()) {
+        if (uiHelper.isReduceMotionEnabled()) {
             return; // Пропускаем анимации если включен режим упрощенных анимаций
         }
         
@@ -289,7 +288,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
         holder.itemView.setScaleX(0.9f);
         holder.itemView.setScaleY(0.9f);
         
-        long duration = themeManager.getAnimationDuration(300);
+        long duration = uiHelper.getAnimationDuration(300);
         
         ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(holder.itemView, "alpha", 0f, 1f);
         ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(holder.itemView, "scaleX", 0.9f, 1f);
@@ -303,12 +302,12 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
     }
 
     private void animateCardFocus(CardViewHolder holder, boolean focused) {
-        if (themeManager.isReduceMotionEnabled()) {
+        if (uiHelper.isReduceMotionEnabled()) {
             return;
         }
         
         float scale = focused ? 1.05f : 1f;
-        long duration = themeManager.getAnimationDuration(150);
+        long duration = uiHelper.getAnimationDuration(150);
         
         ObjectAnimator scaleXAnimator = ObjectAnimator.ofFloat(holder.itemView, "scaleX", scale);
         ObjectAnimator scaleYAnimator = ObjectAnimator.ofFloat(holder.itemView, "scaleY", scale);
@@ -323,7 +322,7 @@ public class CardStackAdapter extends RecyclerView.Adapter<CardStackAdapter.Card
      * Анимирует индикаторы свайпа
      */
     public void animateSwipeIndicator(int position, float swipeProgress, boolean isLeftSwipe) {
-        if (position < 0 || position >= items.size() || themeManager.isReduceMotionEnabled()) {
+        if (position < 0 || position >= items.size() || uiHelper.isReduceMotionEnabled()) {
             return;
         }
         

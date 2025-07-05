@@ -91,7 +91,7 @@ public class ApiIntegrationHelper {
         loadedAnimeIds.clear();
         
         // Загружаем фильмы
-        loadMoviesRecursively(moviePage, itemsPerType, new ArrayList<>(), new ApiHelper.LoadTypeCallback() {
+        loadMoviesRecursively(moviePage, itemsPerType, new ArrayList<>(), new ApiIntegrationHelper.ApiHelper.LoadTypeCallback() {
             @Override
             public void onComplete(boolean success, List<? extends ContentEntity> items) {
                 if (hasError.get()) return;
@@ -112,7 +112,7 @@ public class ApiIntegrationHelper {
         });
         
         // Загружаем сериалы
-        loadTVShowsRecursively(tvShowPage, itemsPerType, new ArrayList<>(), new ApiHelper.LoadTypeCallback() {
+        loadTVShowsRecursively(tvShowPage, itemsPerType, new ArrayList<>(), new ApiIntegrationHelper.ApiHelper.LoadTypeCallback() {
             @Override
             public void onComplete(boolean success, List<? extends ContentEntity> items) {
                 if (hasError.get()) return;
@@ -133,7 +133,7 @@ public class ApiIntegrationHelper {
         });
         
         // Загружаем игры
-        loadGamesRecursively(gamePage, itemsPerType, new ArrayList<>(), new ApiHelper.LoadTypeCallback() {
+        loadGamesRecursively(gamePage, itemsPerType, new ArrayList<>(), new ApiIntegrationHelper.ApiHelper.LoadTypeCallback() {
             @Override
             public void onComplete(boolean success, List<? extends ContentEntity> items) {
                 if (hasError.get()) return;
@@ -154,7 +154,7 @@ public class ApiIntegrationHelper {
         });
         
         // Загружаем книги
-        loadBooksRecursively(bookPage, itemsPerType, new ArrayList<>(), new ApiHelper.LoadTypeCallback() {
+        loadBooksRecursively(bookPage, itemsPerType, new ArrayList<>(), new ApiIntegrationHelper.ApiHelper.LoadTypeCallback() {
             @Override
             public void onComplete(boolean success, List<? extends ContentEntity> items) {
                 if (hasError.get()) return;
@@ -175,7 +175,7 @@ public class ApiIntegrationHelper {
         });
         
         // Загружаем аниме
-        loadAnimeRecursively(animePage, itemsPerType, new ArrayList<>(), new ApiHelper.LoadTypeCallback() {
+        loadAnimeRecursively(animePage, itemsPerType, new ArrayList<>(), new ApiIntegrationHelper.ApiHelper.LoadTypeCallback() {
             @Override
             public void onComplete(boolean success, List<? extends ContentEntity> items) {
                 if (hasError.get()) return;
@@ -203,7 +203,7 @@ public class ApiIntegrationHelper {
      * @param collectedItems уже собранные элементы
      * @param callback обратный вызов после загрузки
      */
-    private void loadMoviesRecursively(int page, int targetCount, List<MovieEntity> collectedItems, ApiHelper.LoadTypeCallback callback) {
+    private void loadMoviesRecursively(int page, int targetCount, List<MovieEntity> collectedItems, ApiIntegrationHelper.ApiHelper.LoadTypeCallback callback) {
         // Ограничение по количеству страниц для предотвращения бесконечной рекурсии
         if (page > 10) {
             callback.onComplete(true, collectedItems);
@@ -253,7 +253,7 @@ public class ApiIntegrationHelper {
      * @param collectedItems уже собранные элементы
      * @param callback обратный вызов после загрузки
      */
-    private void loadTVShowsRecursively(int page, int targetCount, List<TVShowEntity> collectedItems, ApiHelper.LoadTypeCallback callback) {
+    private void loadTVShowsRecursively(int page, int targetCount, List<TVShowEntity> collectedItems, ApiIntegrationHelper.ApiHelper.LoadTypeCallback callback) {
         // Ограничение по количеству страниц для предотвращения бесконечной рекурсии
         if (page > 10) {
             callback.onComplete(true, collectedItems);
@@ -303,7 +303,7 @@ public class ApiIntegrationHelper {
      * @param collectedItems уже собранные элементы
      * @param callback обратный вызов после загрузки
      */
-    private void loadGamesRecursively(int page, int targetCount, List<GameEntity> collectedItems, ApiHelper.LoadTypeCallback callback) {
+    private void loadGamesRecursively(int page, int targetCount, List<GameEntity> collectedItems, ApiIntegrationHelper.ApiHelper.LoadTypeCallback callback) {
         // Ограничение по количеству страниц для предотвращения бесконечной рекурсии
         if (page > 10) {
             callback.onComplete(true, collectedItems);
@@ -353,7 +353,7 @@ public class ApiIntegrationHelper {
      * @param collectedItems уже собранные элементы
      * @param callback обратный вызов после загрузки
      */
-    private void loadBooksRecursively(int page, int targetCount, List<BookEntity> collectedItems, ApiHelper.LoadTypeCallback callback) {
+    private void loadBooksRecursively(int page, int targetCount, List<BookEntity> collectedItems, ApiIntegrationHelper.ApiHelper.LoadTypeCallback callback) {
         // Ограничение по количеству страниц для предотвращения бесконечной рекурсии
         if (page > 10) {
             callback.onComplete(true, collectedItems);
@@ -403,7 +403,7 @@ public class ApiIntegrationHelper {
      * @param collectedItems уже собранные элементы
      * @param callback обратный вызов после загрузки
      */
-    private void loadAnimeRecursively(int page, int targetCount, List<AnimeEntity> collectedItems, ApiHelper.LoadTypeCallback callback) {
+    private void loadAnimeRecursively(int page, int targetCount, List<AnimeEntity> collectedItems, ApiIntegrationHelper.ApiHelper.LoadTypeCallback callback) {
         // Ограничение по количеству страниц для предотвращения бесконечной рекурсии
         if (page > 10) {
             callback.onComplete(true, collectedItems);
